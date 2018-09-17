@@ -95,24 +95,6 @@ public class RepositoryManager {
         }
     }
 
-    private static void deleteTreesCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
-        for (String revision: revisionsForDeletion) {
-            Path pathForDeletion = GIT_TREES_PATH.resolve(revision);
-            deleteDirectory(pathForDeletion);
-        }
-    }
-
-    private static void deleteObjectsCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
-        for (String revision: revisionsForDeletion) {
-            Path pathForDeletion = GIT_OBJECTS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
-            Files.delete(pathForDeletion);
-            while (pathForDeletion.getParent() != null && Files.list(pathForDeletion.getParent()).count() == 0) {
-                pathForDeletion = pathForDeletion.getParent();
-                Files.delete(pathForDeletion);
-            }
-        }
-    }
-
     private static void revertLastCommit() throws IOException, Base64DecodingException {
         Commit currentHead = Commit.ofHead();
         List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(currentHead.getHash()));
@@ -163,8 +145,22 @@ public class RepositoryManager {
         );
     }
 
-    private static void rewriteObjects() {
+    private static void deleteTreesCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
+        for (String revision: revisionsForDeletion) {
+            Path pathForDeletion = GIT_TREES_PATH.resolve(revision);
+            deleteDirectory(pathForDeletion);
+        }
+    }
 
+    private static void deleteObjectsCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
+        for (String revision: revisionsForDeletion) {
+            Path pathForDeletion = GIT_OBJECTS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
+            Files.delete(pathForDeletion);
+            while (pathForDeletion.getParent() != null && Files.list(pathForDeletion.getParent()).count() == 0) {
+                pathForDeletion = pathForDeletion.getParent();
+                Files.delete(pathForDeletion);
+            }
+        }
     }
 
     private static boolean isRevisionNotExists(@NotNull String revision) {
