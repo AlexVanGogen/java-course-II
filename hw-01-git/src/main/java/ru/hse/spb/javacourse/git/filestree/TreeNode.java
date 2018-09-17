@@ -71,15 +71,15 @@ public final class TreeNode extends Node {
 
     @Override
     public void write() throws IOException {
-        Files.createDirectory(Paths.get(root.getRootDirectory() + "/" + path.toString()));
+        Files.createDirectory(root.getRootDirectory().resolve(path));
         for (Node node : subNodes) {
             node.write();
         }
         Path dataFilePath;
         if (path.getParent() == null)
-            dataFilePath = Paths.get(root.getRootDirectory() + "/tree_data");
+            dataFilePath = root.getRootDirectory().resolve("tree_data");
         else
-            dataFilePath = Paths.get(root.getRootDirectory() + "/" + path.getParent().toString() + "/tree_data");
+            dataFilePath = root.getRootDirectory().resolve(path.toString()).resolve("tree_data");
         Path file;
         if (Files.exists(dataFilePath))
             file = dataFilePath;
