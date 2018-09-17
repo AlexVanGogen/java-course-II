@@ -64,10 +64,12 @@ public class RepositoryManager {
 
     public static void checkout(@NotNull String revision) throws IOException, Base64DecodingException {
         checkout(revision, false);
+        System.out.println("Checkout to revision " + revision);
     }
 
     public static void reset(@NotNull String revision) throws IOException, Base64DecodingException {
         checkout(revision, true);
+        System.out.println("Reset to revision " + revision);
     }
 
     private static void checkout(@NotNull String revision, boolean reset) throws IOException, Base64DecodingException {
@@ -76,7 +78,6 @@ public class RepositoryManager {
             throw new IllegalArgumentException();
         }
         moveToRevision(revision, reset);
-        System.out.println("Checkout to revision " + revision);
     }
 
     private static void moveToRevision(@NotNull String revision, boolean deleteNewerChanges) throws IOException, Base64DecodingException {
