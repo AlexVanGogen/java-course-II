@@ -32,8 +32,11 @@ public class CommitFilesTree {
     public void saveFiles(@NotNull List<Path> committingFilesPaths) throws IOException {
         Path currentPath = Paths.get("");
         root = new TreeNode(currentPath, this);
-        for (Path nextCommitingFile : committingFilesPaths) {
-            root.saveFile(nextCommitingFile);
+        for (Path nextCommittingFile : committingFilesPaths) {
+            if (Files.notExists(nextCommittingFile)) {
+                System.out.println("File not exists: " + nextCommittingFile.toString());
+            }
+            root.saveFile(nextCommittingFile);
         }
     }
 

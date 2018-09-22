@@ -73,14 +73,16 @@ public class Commit {
         commit.submit();
     }
 
+    @Nullable
     public static Commit ofHead() throws IOException {
         String headHash = getHead();
         if (headHash == null) {
-            throw new RevisionNotFoundException();
+            return null;
         }
         return ofRevision(headHash);
     }
 
+    @NotNull
     public static Commit ofRevision(@NotNull String revision) throws IOException {
         Path revisionPath = GIT_COMMITS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
         if (Files.notExists(revisionPath)) {

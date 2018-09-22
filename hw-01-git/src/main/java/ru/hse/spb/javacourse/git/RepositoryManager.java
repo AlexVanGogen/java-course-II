@@ -38,25 +38,35 @@ public class RepositoryManager {
         Files.write(GIT_REFS_PATH, Collections.singletonList(new JSONArray().toString()));
     }
 
-    public static void showLog(@NotNull String fromRevision) throws IOException {
+    public static List<String> showLog(@NotNull String fromRevision) throws IOException {
         if (isRevisionNotExists(fromRevision)) {
             throw new IllegalArgumentException();
         }
+        List<String> log = new ArrayList<>();
         Commit currentCommit = Commit.ofHead();
+        if (currentCommit == null) {
+            return log;
+        }
         while (!currentCommit.getHash().equals(fromRevision)) {
-            System.out.println(currentCommit.log());
+            log.add(currentCommit.log());
             currentCommit = Commit.ofRevision(currentCommit.getParentHash());
         }
-        System.out.println(currentCommit.log());
+        log.add(currentCommit.log());
+        return log;
     }
 
-    public static void showLog() throws IOException {
+    public static List<String> showLog() throws IOException {
+        List<String> log = new ArrayList<>();
         Commit currentCommit = Commit.ofHead();
+        if (currentCommit == null) {
+            return log;
+        }
         while (currentCommit.getParentHash() != null) {
-            System.out.println(currentCommit.log());
+            log.add(currentCommit.log());
             currentCommit = Commit.ofRevision(currentCommit.getParentHash());
         }
-        System.out.println(currentCommit.log());
+        log.add(currentCommit.log());
+        return log;
     }
 
     public static void commit(@NotNull String message, @NotNull List<String> filenames) throws IOException {
