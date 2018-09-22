@@ -17,6 +17,7 @@ public class Main {
             if (command.equals("init")) {
                 try {
                     RepositoryManager.initialize();
+                    System.out.println("Jgit initialized successfully");
                 } catch (RepositoryAlreadyInitializedException e) {
                     System.out.println("Repository is already initialized!");
                 }
@@ -39,6 +40,7 @@ public class Main {
                 String message = args[1];
                 List<String> files = new ArrayList<>(Arrays.asList(args).subList(2, args.length));
                 RepositoryManager.commit(message, files);
+                System.out.printf("Committed %d file(s)\n", files.size());
             }
 
             if (command.equals("checkout")) {
@@ -46,7 +48,9 @@ public class Main {
                     System.out.println("Revision isn't specified");
                     return;
                 }
-                RepositoryManager.checkout(args[1]);
+                String revision = args[1];
+                RepositoryManager.checkout(revision);
+                System.out.println("Checkout to revision " + revision);
             }
 
             if (command.equals("reset")) {
@@ -54,7 +58,9 @@ public class Main {
                     System.out.println("Revision isn't specified");
                     return;
                 }
-                RepositoryManager.reset(args[1]);
+                String revision = args[1];
+                RepositoryManager.reset(revision);
+                System.out.println("Reset to revision " + revision);
             }
         } catch (IOException | Base64DecodingException e) {
             System.out.println("Error while processing command: " + e);

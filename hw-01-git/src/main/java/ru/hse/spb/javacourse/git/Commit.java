@@ -4,6 +4,8 @@ import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingExcepti
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Commit {
 
@@ -56,6 +59,15 @@ public class Commit {
         this(hash, timestamp, message, null);
     }
 
+    public Commit(@NotNull String hash, @NotNull JSONObject commitData) throws IOException {
+        this(
+                hash,
+                commitData.getLong("timestamp"),
+                commitData.getString("message"),
+                commitData.has("parent") ? commitData.getString("parent") : null
+        );
+    }
+
     public static void makeAndSubmit(@NotNull String message, @NotNull List<String> committingFileNames) throws IOException {
         Commit commit = new Commit(message, committingFileNames);
         commit.submit();
@@ -74,12 +86,9 @@ public class Commit {
         if (Files.notExists(revisionPath)) {
             throw new RevisionNotFoundException();
         }
-        List<String> commitInfoLines = Files.readAllLines(revisionPath);
-        if (commitInfoLines.size() == 3) {
-            return new Commit(revision, Long.valueOf(commitInfoLines.get(1)), commitInfoLines.get(2));
-        } else if (commitInfoLines.size() == 4) {
-            return new Commit(revision, Long.valueOf(commitInfoLines.get(2)), commitInfoLines.get(3), commitInfoLines.get(1).split(" ")[1]);
-        } else throw new IncorrectStorageFormatException();
+        Stream<String> commitInfoLines = Files.lines(revisionPath);
+        JSONObject commitData = new JSONObject(commitInfoLines.collect(Collectors.joining(",")));
+        return new Commit(revision, commitData);
     }
 
     public String log() throws IOException {
@@ -145,43 +154,49 @@ public class Commit {
             Files.createDirectory(GIT_COMMITS_PATH);
         }
         Path commitPath = Files.createFile(Files.createDirectory(GIT_COMMITS_PATH.resolve(hashPrefix)).resolve(hashSuffix));
-        Files.write(commitPath, Collections.singletonList(getCommitInfo()));
+        Files.write(commitPath, Collections.singletonList(toJson().toString()));
     }
 
-    private String getCommitInfo() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("tree ").append(filesTree.getHash()).append("\n");
+    private JSONObject toJson() {
+        JSONObject commitData = new JSONObject();
+        commitData.put("tree", filesTree.getHash());
         if (parentHash != null) {
-            builder.append("parent ").append(parentHash).append("\n");
+            commitData.put("parent", parentHash);
         }
-        builder.append(timestamp).append("\n").append(message);
-        return builder.toString();
+        commitData.put("timestamp", timestamp);
+        commitData.put("message", message);
+        return commitData;
     }
 
     private static String getHead() throws IOException {
-        for (String ref : Files.readAllLines(GIT_REFS_PATH)) {
-            String[] refInfo = ref.split(" ");
-            if (isRefForHead(refInfo)) {
-                return refInfo[1];
+        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
+        for (Object nextReference: refsList) {
+            JSONObject refJson = (JSONObject) nextReference;
+            if (refJson.getString("name").equals("HEAD")) {
+                return refJson.getString("revision");
             }
         }
         return null;
     }
 
     private void updateRefs() throws IOException {
-        List<String> refs = Files.readAllLines(GIT_REFS_PATH);
-        for (int i = 0; i < refs.size(); i++) {
-            String[] refInfo = refs.get(i).split(" ");
-            if (isRefForHead(refInfo)) {
-                refs.set(i, refInfo[0] + " " + hash);
-                Files.write(GIT_REFS_PATH, refs);
-                return;
+        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
+        JSONArray updatedRefsList = new JSONArray();
+        boolean isHeadFound = false;
+        for (Object nextReference: refsList) {
+            JSONObject refJson = (JSONObject) nextReference;
+            if (refJson.getString("name").equals("HEAD")) {
+                refJson.put("revision", hash);
+                isHeadFound = true;
             }
+            updatedRefsList.put(refJson);
         }
-        Files.write(GIT_REFS_PATH, Collections.singletonList("HEAD " + hash));
-    }
-
-    private static boolean isRefForHead(String[] refInfo) {
-        return (refInfo.length == 2 && refInfo[0].equals("HEAD"));
+        if (!isHeadFound) {
+            JSONObject headData = new JSONObject();
+            headData.put("name", "HEAD");
+            headData.put("revision", hash);
+            updatedRefsList.put(headData);
+        }
+        Files.write(GIT_REFS_PATH, Collections.singletonList(updatedRefsList.toString()));
     }
 }

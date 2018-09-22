@@ -4,6 +4,7 @@ import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingExcepti
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -32,12 +33,11 @@ public class Blob {
         sha1Suffix = sha1.substring(2);
     }
 
-    public Blob(@NotNull String blobDeclaration) throws IOException {
-        String[] blobDeclarationDetails = blobDeclaration.split(" ");
-        sha1 = blobDeclarationDetails[1];
+    public Blob(@NotNull JSONObject blobDeclaration) throws IOException {
+        sha1 = blobDeclaration.getString("hash");
         sha1Prefix = sha1.substring(0, 2);
         sha1Suffix = sha1.substring(2);
-        objectQualifiedPath = Paths.get(blobDeclarationDetails[2]);
+        objectQualifiedPath = Paths.get(blobDeclaration.getString("path"));
         contentsEncoded = getEncodedContentsForBlob(sha1);
     }
 
@@ -56,6 +56,14 @@ public class Blob {
 
     public String decodeContents() throws Base64DecodingException {
         return new String(Base64.decode(contentsEncoded));
+    }
+
+    @NotNull
+    public JSONObject toJson() {
+        JSONObject blobData = new JSONObject();
+        blobData.put("path", objectQualifiedPath.toString());
+        blobData.put("hash", sha1);
+        return blobData;
     }
 
     @NotNull
@@ -90,7 +98,7 @@ public class Blob {
     }
 
     private void writeToIndex() throws IOException {
-        Files.write(GIT_INDEX_PATH, Collections.singletonList(objectQualifiedPath.toString() + " " + sha1), StandardOpenOption.APPEND);
+        Files.write(GIT_INDEX_PATH, Collections.singletonList(toJson().toString()), StandardOpenOption.APPEND);
     }
 
     private String readContents(@NotNull Path location) throws IOException {

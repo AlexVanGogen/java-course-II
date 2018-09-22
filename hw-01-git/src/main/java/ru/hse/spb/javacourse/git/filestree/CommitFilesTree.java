@@ -1,6 +1,7 @@
 package ru.hse.spb.javacourse.git.filestree;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
 import ru.hse.spb.javacourse.git.FileUtils;
 
@@ -45,7 +46,7 @@ public class CommitFilesTree {
         for (Path nextFilePath: textFilesPaths) {
             List<String> declaredBlobs = Files.readAllLines(nextFilePath);
             for (String nextBlobDeclaration: declaredBlobs) {
-                committedFiles.add(new Blob(nextBlobDeclaration));
+                committedFiles.add(new Blob(new JSONObject(nextBlobDeclaration)));
             }
         }
         return committedFiles;

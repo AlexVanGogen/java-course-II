@@ -3,6 +3,8 @@ package ru.hse.spb.javacourse.git;
 import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.File;
@@ -33,7 +35,7 @@ public class RepositoryManager {
         Files.createFile(GIT_INDEX_PATH);
         Files.createDirectory(GIT_OBJECTS_PATH);
         Files.createFile(GIT_REFS_PATH);
-        System.out.println("Jgit initialized successfully");
+        Files.write(GIT_REFS_PATH, Collections.singletonList(new JSONArray().toString()));
     }
 
     public static void showLog(@NotNull String fromRevision) throws IOException {
@@ -59,17 +61,14 @@ public class RepositoryManager {
 
     public static void commit(@NotNull String message, @NotNull List<String> filenames) throws IOException {
         Commit.makeAndSubmit(message, filenames);
-        System.out.printf("Committed %d files\n", filenames.size());
     }
 
     public static void checkout(@NotNull String revision) throws IOException, Base64DecodingException {
         checkout(revision, false);
-        System.out.println("Checkout to revision " + revision);
     }
 
     public static void reset(@NotNull String revision) throws IOException, Base64DecodingException {
         checkout(revision, true);
-        System.out.println("Reset to revision " + revision);
     }
 
     private static void checkout(@NotNull String revision, boolean reset) throws IOException, Base64DecodingException {
@@ -119,9 +118,8 @@ public class RepositoryManager {
 
     private static List<Blob> readIndex() throws IOException {
         List<Blob> blobsInIndex = new ArrayList<>();
-        for (String nextBlobDeclarationInIndex: Files.readAllLines(GIT_INDEX_PATH)) {
-            String[] declarationInfo = nextBlobDeclarationInIndex.split(" ");
-            blobsInIndex.add(new Blob(declarationInfo[0], declarationInfo[1]));
+        for (JSONObject nextBlobIndex : Files.lines(GIT_INDEX_PATH).map(JSONObject::new).collect(Collectors.toList())) {
+            blobsInIndex.add(new Blob(nextBlobIndex));
         }
         return blobsInIndex;
     }
@@ -142,7 +140,7 @@ public class RepositoryManager {
     private static void rewriteIndex() throws IOException {
         Files.write(
                 GIT_INDEX_PATH,
-                index.stream().map(blob -> blob.getObjectQualifiedPath() + " " + blob.getSha1()).collect(Collectors.toList())
+                index.stream().map(Blob::toJson).map(JSONObject::toString).collect(Collectors.toList())
         );
     }
 

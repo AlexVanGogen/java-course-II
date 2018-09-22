@@ -3,6 +3,7 @@ package ru.hse.spb.javacourse.git.filestree;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
 
 import java.io.IOException;
@@ -84,7 +85,11 @@ public final class TreeNode extends Node {
         if (Files.exists(dataFilePath))
             file = dataFilePath;
         else file = Files.createFile(dataFilePath);
-        Files.write(file, Collections.singletonList("tree " + getHash() + " " + path.toString()), StandardOpenOption.APPEND);
+        JSONObject subtreeData = new JSONObject();
+        subtreeData.put("type", "tree");
+        subtreeData.put("hash", getHash());
+        subtreeData.put("path", path.toString());
+        Files.write(file, Collections.singletonList(subtreeData.toString()), StandardOpenOption.APPEND);
     }
 
     @Override

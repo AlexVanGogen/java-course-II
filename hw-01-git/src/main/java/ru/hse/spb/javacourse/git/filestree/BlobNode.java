@@ -1,6 +1,7 @@
 package ru.hse.spb.javacourse.git.filestree;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
 
 import java.io.IOException;
@@ -41,8 +42,12 @@ public final class BlobNode extends Node {
     @Override
     public void write() throws IOException {
         if (!blob.getObjectQualifiedPath().toString().endsWith(".txt")) return;
-        Path file = Files.createFile(Paths.get(root.getRootDirectory() + "/" + blob.getObjectQualifiedPath().toString()));
-        Files.write(file, Collections.singletonList("blob " + blob.getSha1() + " " + blob.getObjectQualifiedPath().toString()), StandardOpenOption.APPEND);
+        Path file = Files.createFile(Paths.get(root.getRootDirectory().toString()).resolve(blob.getObjectQualifiedPath()));
+        JSONObject blobInfo = new JSONObject();
+        blobInfo.put("type", "blob");
+        blobInfo.put("hash", blob.getSha1());
+        blobInfo.put("path", blob.getObjectQualifiedPath().toString());
+        Files.write(file, Collections.singletonList(blobInfo.toString()), StandardOpenOption.APPEND);
         blob.save();
     }
 
