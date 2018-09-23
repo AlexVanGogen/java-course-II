@@ -35,6 +35,9 @@ public class Main {
                 case "reset":
                     gitCommand = new Reset();
                     break;
+                case "status":
+                    gitCommand = new Status();
+                    break;
                 default:
                     System.out.println("Unknown command: " + command);
                     return;

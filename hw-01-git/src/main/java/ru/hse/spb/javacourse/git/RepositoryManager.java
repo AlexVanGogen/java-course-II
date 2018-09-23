@@ -1,6 +1,5 @@
 package ru.hse.spb.javacourse.git;
 
-import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
@@ -20,11 +19,12 @@ import java.util.stream.Collectors;
 
 public class RepositoryManager {
 
-    private static final Path GIT_ROOT_PATH = Paths.get(".jgit/");
-    private static final Path GIT_INDEX_PATH = Paths.get(".jgit/index/");
-    private static final Path GIT_OBJECTS_PATH = Paths.get(".jgit/objects/");
-    private static final Path GIT_REFS_PATH = Paths.get(".jgit/refs/");
-    private static final Path GIT_TREES_PATH = Paths.get(".jgit/trees/");
+    public static final Path GIT_ROOT_PATH = Paths.get(".jgit/");
+    public static final Path GIT_INDEX_PATH = Paths.get(".jgit/index/");
+    public static final Path GIT_OBJECTS_PATH = Paths.get(".jgit/objects/");
+    public static final Path GIT_REFS_PATH = Paths.get(".jgit/refs/");
+    public static final Path GIT_TREES_PATH = Paths.get(".jgit/trees/");
+    public static final Path GIT_FILE_STATES_PATH = Paths.get(".jgit/states");
 
     private static List<Blob> index;
 
@@ -36,8 +36,11 @@ public class RepositoryManager {
         Files.createDirectory(GIT_OBJECTS_PATH);
         Files.createFile(GIT_REFS_PATH);
         Files.write(GIT_REFS_PATH, Collections.singletonList(new JSONArray().toString()));
+        Files.createFile(GIT_FILE_STATES_PATH);
+        Files.write(GIT_FILE_STATES_PATH, Collections.singletonList(new JSONArray().toString()));
     }
 
+    @NotNull
     public static List<String> showLog(@NotNull String fromRevision) throws IOException {
         if (isRevisionNotExists(fromRevision)) {
             throw new IllegalArgumentException();
@@ -55,6 +58,7 @@ public class RepositoryManager {
         return log;
     }
 
+    @NotNull
     public static List<String> showLog() throws IOException {
         List<String> log = new ArrayList<>();
         Commit currentCommit = Commit.ofHead();
@@ -73,15 +77,15 @@ public class RepositoryManager {
         Commit.makeAndSubmit(message, filenames);
     }
 
-    public static void checkout(@NotNull String revision) throws IOException, Base64DecodingException {
+    public static void checkout(@NotNull String revision) throws IOException {
         checkout(revision, false);
     }
 
-    public static void reset(@NotNull String revision) throws IOException, Base64DecodingException {
+    public static void reset(@NotNull String revision) throws IOException {
         checkout(revision, true);
     }
 
-    private static void checkout(@NotNull String revision, boolean reset) throws IOException, Base64DecodingException {
+    private static void checkout(@NotNull String revision, boolean reset) throws IOException {
         index = readIndex();
         if (isRevisionNotExists(revision)) {
             throw new IllegalArgumentException();
@@ -89,7 +93,7 @@ public class RepositoryManager {
         moveToRevision(revision, reset);
     }
 
-    private static void moveToRevision(@NotNull String revision, boolean deleteNewerChanges) throws IOException, Base64DecodingException {
+    private static void moveToRevision(@NotNull String revision, boolean deleteNewerChanges) throws IOException {
         List<String> revisionsForDeletion = new ArrayList<>();
         while (true) {
             String currentHeadHash = Commit.ofHead().getHash();
@@ -105,7 +109,7 @@ public class RepositoryManager {
         }
     }
 
-    private static void revertLastCommit() throws IOException, Base64DecodingException {
+    private static void revertLastCommit() throws IOException {
         Commit currentHead = Commit.ofHead();
         List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(currentHead.getHash()));
         for (Blob nextCommittedFile: committedFiles) {
@@ -126,6 +130,7 @@ public class RepositoryManager {
         index = index.subList(0, index.size() - filesChangedByRevertedCommit);
     }
 
+    @NotNull
     private static List<Blob> readIndex() throws IOException {
         List<Blob> blobsInIndex = new ArrayList<>();
         for (JSONObject nextBlobIndex : Files.lines(GIT_INDEX_PATH).map(JSONObject::new).collect(Collectors.toList())) {

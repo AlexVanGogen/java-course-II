@@ -41,7 +41,6 @@ public final class BlobNode extends Node {
 
     @Override
     public void write() throws IOException {
-        if (!blob.getObjectQualifiedPath().toString().endsWith(".txt")) return;
         Path file = Files.createFile(Paths.get(root.getRootDirectory().toString()).resolve(blob.getObjectQualifiedPath()));
         JSONObject blobInfo = new JSONObject();
         blobInfo.put("type", "blob");

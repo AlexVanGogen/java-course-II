@@ -1,7 +1,6 @@
 package ru.hse.spb.javacourse.git;
 
-import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
@@ -27,7 +26,7 @@ public class Blob {
     public Blob(@NotNull Path objectLocation) throws IOException {
         objectQualifiedPath = objectLocation;
         String contents = readContents(objectLocation);
-        contentsEncoded = Base64.encode(contents.getBytes());
+        contentsEncoded = Base64.encodeBase64String(contents.getBytes());
         sha1 = DigestUtils.sha1Hex(contents);
         sha1Prefix = sha1.substring(0, 2);
         sha1Suffix = sha1.substring(2);
@@ -54,8 +53,8 @@ public class Blob {
         writeToIndex();
     }
 
-    public String decodeContents() throws Base64DecodingException {
-        return new String(Base64.decode(contentsEncoded));
+    public String decodeContents() {
+        return new String(Base64.decodeBase64(contentsEncoded));
     }
 
     @NotNull
@@ -76,14 +75,8 @@ public class Blob {
         return sha1;
     }
 
-    @NotNull
-    public String getSha1Prefix() {
-        return sha1Prefix;
-    }
-
-    @NotNull
-    public String getSha1Suffix() {
-        return sha1Suffix;
+    public String getEncodedContents() {
+        return contentsEncoded;
     }
 
     private void writeToObjects() throws IOException {
@@ -102,7 +95,6 @@ public class Blob {
     }
 
     private String readContents(@NotNull Path location) throws IOException {
-        if (!location.toString().endsWith(".txt")) return "";
         return Files.lines(location).collect(Collectors.joining("\n"));
     }
 

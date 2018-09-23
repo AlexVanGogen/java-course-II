@@ -1,6 +1,5 @@
 package ru.hse.spb.javacourse.git;
 
-import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import org.junit.jupiter.api.*;
 
 import java.io.File;
@@ -78,7 +77,7 @@ public class GitTest {
     }
 
     @Test
-    void testCommitAndReset() throws IOException, Base64DecodingException {
+    void testCommitAndReset() throws IOException {
         commit();
         commitChange();
         List<String> log = RepositoryManager.showLog();

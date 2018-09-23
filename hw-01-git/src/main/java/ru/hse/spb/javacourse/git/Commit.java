@@ -1,6 +1,5 @@
 package ru.hse.spb.javacourse.git;
 
-import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -98,15 +97,11 @@ public class Commit {
         return hash + " [" + message + "] " + new Date(timestamp * 1000) + (hash.equals(headHash) ? " <- HEAD" : "");
     }
 
-    public List<Path> getCommittedFiles() {
-        return committingFiles;
-    }
-
     public int getNumberOfCommittedFiles() {
         return committingFiles.size();
     }
 
-    public void restoreChanges() throws IOException, Base64DecodingException {
+    public void restoreChanges() throws IOException {
         Path commitChangesTreePath = GIT_TREES_PATH.resolve(hash);
         List<Blob> changedFiles = CommitFilesTree.getAllCommittedFiles(commitChangesTreePath);
         for (Blob nextChangedFile: changedFiles) {
@@ -151,15 +146,7 @@ public class Commit {
         updateRefs();
     }
 
-    private void updateCommitTree() throws IOException {
-        if (Files.notExists(GIT_COMMITS_PATH)) {
-            Files.createDirectory(GIT_COMMITS_PATH);
-        }
-        Path commitPath = Files.createFile(Files.createDirectory(GIT_COMMITS_PATH.resolve(hashPrefix)).resolve(hashSuffix));
-        Files.write(commitPath, Collections.singletonList(toJson().toString()));
-    }
-
-    private JSONObject toJson() {
+    public JSONObject toJson() {
         JSONObject commitData = new JSONObject();
         commitData.put("tree", filesTree.getHash());
         if (parentHash != null) {
@@ -168,6 +155,14 @@ public class Commit {
         commitData.put("timestamp", timestamp);
         commitData.put("message", message);
         return commitData;
+    }
+
+    private void updateCommitTree() throws IOException {
+        if (Files.notExists(GIT_COMMITS_PATH)) {
+            Files.createDirectory(GIT_COMMITS_PATH);
+        }
+        Path commitPath = Files.createFile(Files.createDirectory(GIT_COMMITS_PATH.resolve(hashPrefix)).resolve(hashSuffix));
+        Files.write(commitPath, Collections.singletonList(toJson().toString()));
     }
 
     private static String getHead() throws IOException {
