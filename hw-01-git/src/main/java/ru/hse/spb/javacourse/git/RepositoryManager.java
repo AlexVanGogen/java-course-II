@@ -73,7 +73,7 @@ public class RepositoryManager {
         return log;
     }
 
-    public static void commit(@NotNull String message, @NotNull List<String> filenames) throws IOException {
+    public static void commit(@NotNull String message, @NotNull List<String> filenames) throws IOException, NothingToCommitException {
         Commit.makeAndSubmit(message, filenames);
     }
 

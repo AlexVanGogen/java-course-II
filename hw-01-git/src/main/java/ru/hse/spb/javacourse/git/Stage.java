@@ -46,7 +46,7 @@ public class Stage {
         return stagedFilePaths;
     }
 
-    public void commitStage(@NotNull String message) throws IOException {
+    public void commitStage(@NotNull String message) throws IOException, NothingToCommitException {
         Commit.makeAndSubmitStaged(message, this);
     }
 

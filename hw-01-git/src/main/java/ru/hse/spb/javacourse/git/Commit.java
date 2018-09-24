@@ -5,6 +5,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import ru.hse.spb.javacourse.git.command.Add;
+import ru.hse.spb.javacourse.git.filestatus.FileStatus;
+import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.IOException;
@@ -67,13 +70,32 @@ public class Commit {
         );
     }
 
-    public static void makeAndSubmit(@NotNull String message, @NotNull List<String> committingFileNames) throws IOException {
-        Commit commit = new Commit(message, committingFileNames);
+    public static void makeAndSubmit(@NotNull String message, @NotNull List<String> committingFileNames) throws IOException, NothingToCommitException {
+        StatusChecker statusChecker = new StatusChecker();
+        statusChecker.getActualFileStates();
+        List<String> filesThatWillBeCommitted = new ArrayList<>();
+        for (String committingFile: committingFileNames) {
+            FileStatus fileStatus = statusChecker.getState(committingFile);
+            if (fileStatus.equals(FileStatus.STAGED) || fileStatus.equals(FileStatus.MODIFIED)) {
+                filesThatWillBeCommitted.add(committingFile);
+            }
+        }
+        if (filesThatWillBeCommitted.isEmpty()) {
+            throw new NothingToCommitException();
+        }
+        Commit commit = new Commit(message, filesThatWillBeCommitted);
         commit.submit(true);
+        Stage stage = Stage.getStage();
+        filesThatWillBeCommitted.forEach(stage::removeFromStageIfExists);
+        stage.writeStage();
     }
 
-    public static void makeAndSubmitStaged(@NotNull String message, @NotNull Stage stage) throws IOException {
-        Commit commit = new Commit(message, stage.getStagedFilePaths());
+    public static void makeAndSubmitStaged(@NotNull String message, @NotNull Stage stage) throws IOException, NothingToCommitException {
+        List<String> stagedFilePaths = stage.getStagedFilePaths();
+        if (stagedFilePaths.isEmpty()) {
+            throw new NothingToCommitException();
+        }
+        Commit commit = new Commit(message, stagedFilePaths);
         commit.submit(false);
         stage.resetStage();
     }

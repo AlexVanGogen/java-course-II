@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
+import ru.hse.spb.javacourse.git.Stage;
 
 import java.io.IOException;
 import java.nio.file.Files;

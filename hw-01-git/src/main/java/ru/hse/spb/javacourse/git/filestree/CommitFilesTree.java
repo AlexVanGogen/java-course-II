@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
 import ru.hse.spb.javacourse.git.FileUtils;
+import ru.hse.spb.javacourse.git.Stage;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

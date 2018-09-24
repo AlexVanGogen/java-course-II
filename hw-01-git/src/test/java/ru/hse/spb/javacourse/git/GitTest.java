@@ -3,6 +3,7 @@ package ru.hse.spb.javacourse.git;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
 import ru.hse.spb.javacourse.git.command.Add;
+import ru.hse.spb.javacourse.git.command.Commit;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
@@ -144,6 +145,12 @@ public class GitTest {
     @Test
     void testStatusAfterStaging() throws IOException {
         add();
+        Stage stage = Stage.getStage();
+        assertTrue(stage.fileInStage(BOOKS_TXT.toString()));
+        assertFalse(stage.fileInStage(LETTERS_TXT.toString()));
+        assertTrue(stage.fileInStage(NUMBERS_TXT.toString()));
+        assertTrue(stage.fileInStage(WORD_TXT.toString()));
+
         statusChecker.getActualFileStates();
         assertEquals(FileStatus.STAGED, statusChecker.getState(BOOKS_TXT.toString()));
         assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
@@ -163,6 +170,49 @@ public class GitTest {
         assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
         assertEquals(FileStatus.STAGED, statusChecker.getState(NUMBERS_TXT.toString()));
         assertEquals(FileStatus.STAGED, statusChecker.getState(WORD_TXT.toString()));
+    }
+
+    @Test
+    void testCommitStagedFiles() throws IOException {
+        add();
+        assertDoesNotThrow(
+                () -> {
+                    new Commit().execute(Collections.singletonList("message"));
+                }
+        );
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(WORD_TXT.toString()));
+
+        List<String> log = RepositoryManager.showLog();
+        assertEquals(1, log.size());
+        assertTrue(log.get(0).contains("message"));
+
+        Stage stage = Stage.getStage();
+        assertFalse(stage.fileInStage(BOOKS_TXT.toString()));
+        assertFalse(stage.fileInStage(LETTERS_TXT.toString()));
+        assertFalse(stage.fileInStage(NUMBERS_TXT.toString()));
+        assertFalse(stage.fileInStage(WORD_TXT.toString()));
+    }
+
+    @Test
+    void testCommitAnyUnstagedAndStagedFiles() throws IOException {
+        add();
+        commit();
+        statusChecker.getActualFileStates();
+
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(WORD_TXT.toString()));
+
+        Stage stage = Stage.getStage();
+        assertFalse(stage.fileInStage(BOOKS_TXT.toString()));
+        assertFalse(stage.fileInStage(LETTERS_TXT.toString()));
+        assertFalse(stage.fileInStage(NUMBERS_TXT.toString()));
+        assertFalse(stage.fileInStage(WORD_TXT.toString()));
     }
 
     @Test
