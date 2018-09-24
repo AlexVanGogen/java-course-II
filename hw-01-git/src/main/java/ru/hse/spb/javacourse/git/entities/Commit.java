@@ -113,7 +113,7 @@ public class Commit {
     public static Commit ofRevision(@NotNull String revision) throws IOException {
         Path revisionPath = GIT_COMMITS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
         if (Files.notExists(revisionPath)) {
-            throw new RevisionNotFoundException();
+            throw new RevisionNotFoundException(revision);
         }
         Stream<String> commitInfoLines = Files.lines(revisionPath);
         JSONObject commitData = new JSONObject(commitInfoLines.collect(Collectors.joining(",")));

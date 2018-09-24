@@ -56,10 +56,15 @@ public class Index {
     }
 
     @Nullable
-    public Blob findPreviousVersionOfFile(@NotNull Commit latestCommit, @NotNull Blob currentFileVersion) {
-        for (int i = indexedFiles.size() - latestCommit.getNumberOfCommittedFiles() - 1; i >= 0; i--) {
-            if (indexedFiles.get(i).getObjectQualifiedPath().equals(currentFileVersion.getObjectQualifiedPath()))
-                return indexedFiles.get(i);
+    public Blob findPreviousVersionOfFile(@NotNull Blob currentFileVersion) {
+        int versionsVisited = 0;
+        for (int i = indexedFiles.size() - 1; i >= 0; i--) {
+            if (indexedFiles.get(i).getObjectQualifiedPath().equals(currentFileVersion.getObjectQualifiedPath())) {
+                if (versionsVisited == 1) {
+                    return indexedFiles.get(i);
+                }
+                versionsVisited++;
+            }
         }
         return null;
     }

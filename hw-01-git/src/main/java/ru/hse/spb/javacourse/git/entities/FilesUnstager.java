@@ -39,7 +39,11 @@ public class FilesUnstager {
                         continue;
                     }
                     Blob latestSavedVersion = index.findLatestVersionOfFile(Paths.get(nextFileToUnstage));
-                    Blob previousSavedVersion = index.findPreviousVersionOfFile(latestCommit, latestSavedVersion);
+                    Blob previousSavedVersion = index.findPreviousVersionOfFile(latestSavedVersion);
+                    if (previousSavedVersion == null) {
+                        answerBuilder.append("File has not previous versions: ").append(nextFileToUnstage).append("\n");
+                        continue;
+                    }
                     Files.write(Paths.get(nextFileToUnstage), Collections.singletonList(previousSavedVersion.decodeContents()));
                     index.removeBlobIfExists(latestSavedVersion);
                     unstagedFiles++;
@@ -53,11 +57,14 @@ public class FilesUnstager {
                     unstagedFiles++;
                 } else {
                     answerBuilder.append("File is not staged or modified: ").append(nextFileToUnstage).append("\n");
-                    continue;
                 }
             }
         }
         answerBuilder.append("Unstaged ").append(unstagedFiles).append(" files").append("\n");
         return answerBuilder.toString();
+    }
+
+    public Index getIndex() {
+        return index;
     }
 }

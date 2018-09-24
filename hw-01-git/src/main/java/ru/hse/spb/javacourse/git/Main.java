@@ -2,6 +2,7 @@ package ru.hse.spb.javacourse.git;
 
 import ru.hse.spb.javacourse.git.command.*;
 import ru.hse.spb.javacourse.git.command.Commit;
+import ru.hse.spb.javacourse.git.entities.RevisionNotFoundException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,6 +48,8 @@ public class Main {
                     return;
             }
             System.out.println(gitCommand.execute(arguments));
+        } catch (RevisionNotFoundException e) {
+            System.out.println("Revision not found: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("Error while processing command: " + e);
         }

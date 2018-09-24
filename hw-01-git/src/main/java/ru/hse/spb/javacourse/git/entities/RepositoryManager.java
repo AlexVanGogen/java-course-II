@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RepositoryManager {
 
@@ -43,7 +44,7 @@ public class RepositoryManager {
     @NotNull
     public static List<String> showLog(@NotNull String fromRevision) throws IOException {
         if (isRevisionNotExists(fromRevision)) {
-            throw new IllegalArgumentException();
+            throw new RevisionNotFoundException(fromRevision);
         }
         List<String> log = new ArrayList<>();
         Commit currentCommit = Commit.ofHead();
@@ -88,13 +89,26 @@ public class RepositoryManager {
     private static void checkout(@NotNull String revision, boolean reset) throws IOException {
         index = Index.getIndex();
         if (isRevisionNotExists(revision)) {
-            throw new IllegalArgumentException();
+            throw new RevisionNotFoundException(revision);
         }
         moveToRevision(revision, reset);
     }
 
     private static void moveToRevision(@NotNull String revision, boolean deleteNewerChanges) throws IOException {
         List<String> revisionsForDeletion = new ArrayList<>();
+        Path currentPath = Paths.get("");
+
+        List<String> filePaths = Files.walk(currentPath)
+                .filter(path -> !path.startsWith(GIT_ROOT_PATH))
+                .filter(Files::isRegularFile)
+                .filter(file -> file.toString().endsWith(".txt"))
+                .map(Path::toString)
+                .collect(Collectors.toList());
+        FilesUnstager unstager = new FilesUnstager(filePaths);
+        unstager.unstage();
+        index = unstager.getIndex();
+        index.writeIndex();
+
         while (true) {
             String currentHeadHash = Commit.ofHead().getHash();
             if (currentHeadHash.equals(revision))
@@ -113,7 +127,7 @@ public class RepositoryManager {
         Commit currentHead = Commit.ofHead();
         List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(currentHead.getHash()));
         for (Blob nextCommittedFile: committedFiles) {
-            Blob previousVersion = index.findPreviousVersionOfFile(currentHead, nextCommittedFile);
+            Blob previousVersion = index.findPreviousVersionOfFile(nextCommittedFile);
             if (previousVersion == null) {
                 Files.delete(nextCommittedFile.getObjectQualifiedPath());
             } else {
