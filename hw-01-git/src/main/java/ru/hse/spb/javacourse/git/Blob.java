@@ -11,10 +11,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class Blob {
+import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_INDEX_PATH;
+import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_OBJECTS_PATH;
 
-    private static final Path GIT_OBJECTS_PATH = Paths.get(".jgit/objects/");
-    private static final Path GIT_INDEX_PATH = Paths.get(".jgit/index");
+public class Blob {
 
     private @NotNull Path objectQualifiedPath;
     private @NotNull String sha1;

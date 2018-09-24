@@ -1,9 +1,7 @@
 package ru.hse.spb.javacourse.git;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
-import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.File;
@@ -15,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class RepositoryManager {
 
@@ -25,8 +22,9 @@ public class RepositoryManager {
     public static final Path GIT_REFS_PATH = Paths.get(".jgit/refs/");
     public static final Path GIT_TREES_PATH = Paths.get(".jgit/trees/");
     public static final Path GIT_FILE_STATES_PATH = Paths.get(".jgit/states");
+    public static final Path GIT_STAGE_PATH = Paths.get(".jgit/stage");
 
-    private static List<Blob> index;
+    private static Index index;
 
     public static void initialize() throws RepositoryAlreadyInitializedException, IOException {
         if (isInitialized())
@@ -38,6 +36,8 @@ public class RepositoryManager {
         Files.write(GIT_REFS_PATH, Collections.singletonList(new JSONArray().toString()));
         Files.createFile(GIT_FILE_STATES_PATH);
         Files.write(GIT_FILE_STATES_PATH, Collections.singletonList(new JSONArray().toString()));
+        Files.createFile(GIT_STAGE_PATH);
+        Files.write(GIT_STAGE_PATH, Collections.singletonList(new JSONArray().toString()));
     }
 
     @NotNull
@@ -86,7 +86,7 @@ public class RepositoryManager {
     }
 
     private static void checkout(@NotNull String revision, boolean reset) throws IOException {
-        index = readIndex();
+        index = Index.getIndex();
         if (isRevisionNotExists(revision)) {
             throw new IllegalArgumentException();
         }
@@ -102,7 +102,7 @@ public class RepositoryManager {
             revertLastCommit();
             revisionsForDeletion.add(currentHeadHash);
         }
-        rewriteIndex();
+        index.writeIndex();
         if (deleteNewerChanges) {
             deleteObjectsCorrespondingTo(revisionsForDeletion);
             deleteTreesCorrespondingTo(revisionsForDeletion);
@@ -113,7 +113,7 @@ public class RepositoryManager {
         Commit currentHead = Commit.ofHead();
         List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(currentHead.getHash()));
         for (Blob nextCommittedFile: committedFiles) {
-            Blob previousVersion = getPreviousFileVersion(currentHead, nextCommittedFile);
+            Blob previousVersion = index.findPreviousVersionOfFile(currentHead, nextCommittedFile);
             if (previousVersion == null) {
                 Files.delete(nextCommittedFile.getObjectQualifiedPath());
             } else {
@@ -123,40 +123,11 @@ public class RepositoryManager {
         if (currentHead.getParentHash() != null) {
             Commit.ofRevision(currentHead.getParentHash()).setAsHead();
         }
-        updateIndex(committedFiles.size());
-    }
-
-    private static void updateIndex(int filesChangedByRevertedCommit) {
-        index = index.subList(0, index.size() - filesChangedByRevertedCommit);
-    }
-
-    @NotNull
-    private static List<Blob> readIndex() throws IOException {
-        List<Blob> blobsInIndex = new ArrayList<>();
-        for (JSONObject nextBlobIndex : Files.lines(GIT_INDEX_PATH).map(JSONObject::new).collect(Collectors.toList())) {
-            blobsInIndex.add(new Blob(nextBlobIndex));
-        }
-        return blobsInIndex;
-    }
-
-    @Nullable
-    private static Blob getPreviousFileVersion(@NotNull Commit latestCommit, @NotNull Blob currentFileVersion) {
-        for (int i = index.size() - latestCommit.getNumberOfCommittedFiles() - 1; i >= 0; i--) {
-            if (index.get(i).getObjectQualifiedPath().equals(currentFileVersion.getObjectQualifiedPath()))
-                return index.get(i);
-        }
-        return null;
+        index.updateIndex(committedFiles.size());
     }
 
     private static boolean isInitialized() {
         return Files.exists(GIT_ROOT_PATH);
-    }
-
-    private static void rewriteIndex() throws IOException {
-        Files.write(
-                GIT_INDEX_PATH,
-                index.stream().map(Blob::toJson).map(JSONObject::toString).collect(Collectors.toList())
-        );
     }
 
     private static void deleteTreesCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
