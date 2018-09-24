@@ -18,6 +18,6 @@ abstract class Node {
 
     abstract void saveFile(Path file) throws IOException;
 
-    public abstract void write() throws IOException;
+    public abstract void write(boolean saveBlob) throws IOException;
     public abstract void print();
 }

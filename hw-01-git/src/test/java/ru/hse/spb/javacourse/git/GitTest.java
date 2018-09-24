@@ -1,16 +1,17 @@
 package ru.hse.spb.javacourse.git;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
+import ru.hse.spb.javacourse.git.command.Add;
+import ru.hse.spb.javacourse.git.filestatus.FileStatus;
+import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,10 +30,13 @@ public class GitTest {
     private static final String NUMBERS_CONTENTS = "1234567890";
     private static final String WORD_CONTENTS = "kidding";
     private static final String NEW_WORD_CONTENTS = "bamboozled";
+    private static final String NEW_BOOK_CONTENTS = "Harry Potter and Java Memory Model";
     private static final String COMMIT1_MESSAGE = "Add books.txt";
     private static final String COMMIT2_MESSAGE = "Add letters.txt";
     private static final String COMMIT3_MESSAGE = "Add numbers.txt and word/word.txt";
     private static final String COMMIT4_MESSAGE = "Change word/word.txt";
+
+    private StatusChecker statusChecker;
 
     @BeforeEach
     void initialize() throws IOException {
@@ -47,6 +51,8 @@ public class GitTest {
         Files.write(LETTERS_TXT, Collections.singletonList(LETTERS_CONTENTS));
         Files.write(NUMBERS_TXT, Collections.singletonList(NUMBERS_CONTENTS));
         Files.write(WORD_TXT, Collections.singletonList(WORD_CONTENTS));
+        statusChecker = new StatusChecker();
+        statusChecker.getActualFileStates();
     }
 
     @AfterEach
@@ -104,6 +110,62 @@ public class GitTest {
     }
 
     @Test
+    void testStatusAfterCommits() throws IOException {
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(WORD_TXT.toString()));
+        commit();
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(WORD_TXT.toString()));
+        commitChange();
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(WORD_TXT.toString()));
+    }
+
+    @Test
+    void testStatusAfterDeletion() throws IOException {
+        commit();
+        Files.deleteIfExists(BOOKS_TXT);
+        assertTrue(Files.notExists(BOOKS_TXT));
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.DELETED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(WORD_TXT.toString()));
+    }
+
+    @Test
+    void testStatusAfterStaging() throws IOException {
+        add();
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.STAGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.STAGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.STAGED, statusChecker.getState(WORD_TXT.toString()));
+
+        changeStagedFiles();
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.STAGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(WORD_TXT.toString()));
+
+        addChangedFiles();
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.STAGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(FileStatus.MODIFIED, statusChecker.getState(LETTERS_TXT.toString()));
+        assertEquals(FileStatus.STAGED, statusChecker.getState(NUMBERS_TXT.toString()));
+        assertEquals(FileStatus.STAGED, statusChecker.getState(WORD_TXT.toString()));
+    }
+
+    @Test
     private void commit() {
         assertDoesNotThrow(
                 () -> RepositoryManager.commit(
@@ -126,6 +188,16 @@ public class GitTest {
     }
 
     @Test
+    private void add() {
+        assertDoesNotThrow(
+                () -> new Add().execute(Collections.singletonList(BOOKS_TXT.toString()))
+        );
+        assertDoesNotThrow(
+                () -> new Add().execute(Arrays.asList(NUMBERS_TXT.toString(), WORD_TXT.toString()))
+        );
+    }
+
+    @Test
     private void commitChange() {
         assertDoesNotThrow(
                 () -> {
@@ -134,6 +206,25 @@ public class GitTest {
                             COMMIT4_MESSAGE,
                             Collections.singletonList(WORD_TXT.toString())
                     );
+                }
+        );
+    }
+
+    @Test
+    private void changeStagedFiles() {
+        assertDoesNotThrow(
+                () -> {
+                    Files.write(WORD_TXT, Collections.singletonList(NEW_WORD_CONTENTS));
+                    Files.write(BOOKS_TXT, Collections.singletonList(NEW_BOOK_CONTENTS));
+                }
+        );
+    }
+
+    @Test
+    private void addChangedFiles() {
+        assertDoesNotThrow(
+                () -> {
+                    new Add().execute(Arrays.asList(WORD_TXT.toString(), BOOKS_TXT.toString()));
                 }
         );
     }

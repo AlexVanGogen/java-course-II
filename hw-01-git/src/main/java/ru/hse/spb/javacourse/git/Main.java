@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class Main {
+
     public static void main(String[] args) {
         if (args.length == 0) {
             System.out.println("Command not specified");
@@ -37,6 +38,9 @@ public class Main {
                     break;
                 case "status":
                     gitCommand = new Status();
+                    break;
+                case "add":
+                    gitCommand = new Add();
                     break;
                 default:
                     System.out.println("Unknown command: " + command);

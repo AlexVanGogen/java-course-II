@@ -40,14 +40,16 @@ public final class BlobNode extends Node {
     void saveFile(Path file) {}
 
     @Override
-    public void write() throws IOException {
+    public void write(boolean saveBlob) throws IOException {
         Path file = Files.createFile(Paths.get(root.getRootDirectory().toString()).resolve(blob.getObjectQualifiedPath()));
         JSONObject blobInfo = new JSONObject();
         blobInfo.put("type", "blob");
         blobInfo.put("hash", blob.getSha1());
         blobInfo.put("path", blob.getObjectQualifiedPath().toString());
         Files.write(file, Collections.singletonList(blobInfo.toString()), StandardOpenOption.APPEND);
-        blob.save();
+        if (saveBlob) {
+            blob.save();
+        }
     }
 
     @Override

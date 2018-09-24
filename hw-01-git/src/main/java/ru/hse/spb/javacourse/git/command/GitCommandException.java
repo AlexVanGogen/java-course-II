@@ -1,3 +1,12 @@
 package ru.hse.spb.javacourse.git.command;
 
-public class GitCommandException extends IllegalArgumentException {}
+import org.jetbrains.annotations.NotNull;
+
+public class GitCommandException extends IllegalArgumentException {
+
+    public GitCommandException() { }
+
+    public GitCommandException(@NotNull String message) {
+        super(message);
+    }
+}

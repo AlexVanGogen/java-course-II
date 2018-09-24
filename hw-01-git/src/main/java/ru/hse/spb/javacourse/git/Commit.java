@@ -69,7 +69,13 @@ public class Commit {
 
     public static void makeAndSubmit(@NotNull String message, @NotNull List<String> committingFileNames) throws IOException {
         Commit commit = new Commit(message, committingFileNames);
-        commit.submit();
+        commit.submit(true);
+    }
+
+    public static void makeAndSubmitStaged(@NotNull String message, @NotNull Stage stage) throws IOException {
+        Commit commit = new Commit(message, stage.getStagedFilePaths());
+        commit.submit(false);
+        stage.resetStage();
     }
 
     @Nullable
@@ -129,7 +135,7 @@ public class Commit {
         return timestamp;
     }
 
-    private void submit() throws IOException {
+    private void submit(boolean saveBlob) throws IOException {
         parentHash = getHead();
         timestamp = Instant.now().getEpochSecond();
         hash = DigestUtils.sha1Hex(String.valueOf(timestamp) + message);
@@ -137,7 +143,7 @@ public class Commit {
         hashSuffix = hash.substring(2);
         filesTree = new CommitFilesTree(hash);
         filesTree.saveFiles(committingFiles);
-        filesTree.write();
+        filesTree.write(saveBlob);
         updateCommitTree();
         updateRefs();
     }

@@ -5,12 +5,12 @@ import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.Blob;
 import ru.hse.spb.javacourse.git.FileUtils;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +34,7 @@ public class CommitFilesTree {
         root = new TreeNode(currentPath, this);
         for (Path nextCommittingFile : committingFilesPaths) {
             if (Files.notExists(nextCommittingFile)) {
-                System.out.println("File not exists: " + nextCommittingFile.toString());
+                throw new FileNotFoundException(nextCommittingFile.toString());
             }
             root.saveFile(nextCommittingFile);
         }
@@ -55,8 +55,8 @@ public class CommitFilesTree {
         return committedFiles;
     }
 
-    public void write() throws IOException {
-        root.write();
+    public void write(boolean saveBlob) throws IOException {
+        root.write(saveBlob);
     }
 
     @NotNull

@@ -71,10 +71,10 @@ public final class TreeNode extends Node {
     }
 
     @Override
-    public void write() throws IOException {
+    public void write(boolean saveBlob) throws IOException {
         Files.createDirectory(root.getRootDirectory().resolve(path));
         for (Node node : subNodes) {
-            node.write();
+            node.write(saveBlob);
         }
         Path dataFilePath;
         if (path.getParent() == null)
