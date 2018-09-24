@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import ru.hse.spb.javacourse.git.*;
 import ru.hse.spb.javacourse.git.entities.Blob;
 import ru.hse.spb.javacourse.git.entities.Commit;
 import ru.hse.spb.javacourse.git.entities.Index;

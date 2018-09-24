@@ -1,6 +1,6 @@
 package ru.hse.spb.javacourse.git.command;
 
-import ru.hse.spb.javacourse.git.RepositoryAlreadyInitializedException;
+import ru.hse.spb.javacourse.git.entities.RepositoryAlreadyInitializedException;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 
 import java.io.IOException;

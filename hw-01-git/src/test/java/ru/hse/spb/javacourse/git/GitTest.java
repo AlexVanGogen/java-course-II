@@ -3,6 +3,7 @@ package ru.hse.spb.javacourse.git;
 import org.junit.jupiter.api.*;
 import ru.hse.spb.javacourse.git.command.Add;
 import ru.hse.spb.javacourse.git.command.Commit;
+import ru.hse.spb.javacourse.git.entities.RepositoryAlreadyInitializedException;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 import ru.hse.spb.javacourse.git.entities.Stage;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;

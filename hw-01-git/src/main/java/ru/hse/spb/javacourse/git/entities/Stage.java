@@ -2,7 +2,6 @@ package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
-import ru.hse.spb.javacourse.git.NothingToCommitException;
 
 import java.io.IOException;
 import java.nio.file.Files;

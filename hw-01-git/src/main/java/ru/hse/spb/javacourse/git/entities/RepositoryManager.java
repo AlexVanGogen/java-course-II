@@ -2,8 +2,6 @@ package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
-import ru.hse.spb.javacourse.git.NothingToCommitException;
-import ru.hse.spb.javacourse.git.RepositoryAlreadyInitializedException;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.File;

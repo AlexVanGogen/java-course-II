@@ -1,3 +1,3 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 public class RepositoryAlreadyInitializedException extends Exception { }

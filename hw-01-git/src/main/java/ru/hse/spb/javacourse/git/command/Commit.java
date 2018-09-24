@@ -1,6 +1,6 @@
 package ru.hse.spb.javacourse.git.command;
 
-import ru.hse.spb.javacourse.git.NothingToCommitException;
+import ru.hse.spb.javacourse.git.entities.NothingToCommitException;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 import ru.hse.spb.javacourse.git.entities.Stage;
 

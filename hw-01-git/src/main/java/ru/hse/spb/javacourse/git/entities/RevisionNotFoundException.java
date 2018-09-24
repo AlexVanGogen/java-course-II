@@ -1,4 +1,4 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 import java.io.IOException;
 
