@@ -1,19 +1,17 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_INDEX_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_INDEX_PATH;
 
 public class Index {
 

@@ -2,6 +2,8 @@ package ru.hse.spb.javacourse.git.command;
 
 import org.jetbrains.annotations.NotNull;
 import ru.hse.spb.javacourse.git.*;
+import ru.hse.spb.javacourse.git.entities.Blob;
+import ru.hse.spb.javacourse.git.entities.Stage;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 

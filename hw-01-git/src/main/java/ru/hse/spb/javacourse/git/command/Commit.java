@@ -1,10 +1,9 @@
 package ru.hse.spb.javacourse.git.command;
 
 import ru.hse.spb.javacourse.git.NothingToCommitException;
-import ru.hse.spb.javacourse.git.RepositoryManager;
-import ru.hse.spb.javacourse.git.Stage;
+import ru.hse.spb.javacourse.git.entities.RepositoryManager;
+import ru.hse.spb.javacourse.git.entities.Stage;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

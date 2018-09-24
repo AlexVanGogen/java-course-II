@@ -6,10 +6,12 @@ import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import ru.hse.spb.javacourse.git.*;
-import ru.hse.spb.javacourse.git.command.Status;
+import ru.hse.spb.javacourse.git.entities.Blob;
+import ru.hse.spb.javacourse.git.entities.Commit;
+import ru.hse.spb.javacourse.git.entities.Index;
+import ru.hse.spb.javacourse.git.entities.Stage;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,9 +19,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_FILE_STATES_PATH;
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_ROOT_PATH;
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_TREES_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_FILE_STATES_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_ROOT_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_TREES_PATH;
 
 public class StatusChecker {
 

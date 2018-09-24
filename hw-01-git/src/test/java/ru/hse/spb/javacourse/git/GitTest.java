@@ -1,9 +1,10 @@
 package ru.hse.spb.javacourse.git;
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
 import ru.hse.spb.javacourse.git.command.Add;
 import ru.hse.spb.javacourse.git.command.Commit;
+import ru.hse.spb.javacourse.git.entities.RepositoryManager;
+import ru.hse.spb.javacourse.git.entities.Stage;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class GitTest {
 
     private static final Path DATA_PATH = Paths.get("src/test/resources/ru/hse/spb/javacourse/git/data");
+    private static final Path DATA_PATH_ROOT = Paths.get("src/test/resources/ru");
     private static final Path GIT_ROOT = Paths.get(".jgit");
     private static final Path BOOKS_TXT = DATA_PATH.resolve("books.txt");
     private static final Path LETTERS_TXT = DATA_PATH.resolve("letters.txt");
@@ -58,7 +60,7 @@ public class GitTest {
 
     @AfterEach
     void destroy() throws IOException {
-        deleteDirectory(DATA_PATH);
+        deleteDirectory(DATA_PATH_ROOT);
         deleteDirectory(GIT_ROOT);
     }
 

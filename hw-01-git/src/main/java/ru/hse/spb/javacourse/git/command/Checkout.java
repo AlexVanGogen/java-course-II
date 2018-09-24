@@ -1,6 +1,6 @@
 package ru.hse.spb.javacourse.git.command;
 
-import ru.hse.spb.javacourse.git.RepositoryManager;
+import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 
 import java.io.IOException;
 import java.util.List;

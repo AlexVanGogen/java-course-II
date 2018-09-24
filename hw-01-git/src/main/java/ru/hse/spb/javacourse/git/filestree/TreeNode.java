@@ -4,13 +4,11 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
-import ru.hse.spb.javacourse.git.Blob;
-import ru.hse.spb.javacourse.git.Stage;
+import ru.hse.spb.javacourse.git.entities.Blob;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;

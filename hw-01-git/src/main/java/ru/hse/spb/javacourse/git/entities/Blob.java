@@ -1,4 +1,4 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -7,12 +7,11 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_INDEX_PATH;
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_OBJECTS_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_INDEX_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_OBJECTS_PATH;
 
 public class Blob {
 

@@ -1,17 +1,16 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
+import ru.hse.spb.javacourse.git.NothingToCommitException;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static ru.hse.spb.javacourse.git.RepositoryManager.GIT_STAGE_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_STAGE_PATH;
 
 public class Stage {
 

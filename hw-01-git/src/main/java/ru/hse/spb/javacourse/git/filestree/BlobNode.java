@@ -2,7 +2,7 @@ package ru.hse.spb.javacourse.git.filestree;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
-import ru.hse.spb.javacourse.git.Blob;
+import ru.hse.spb.javacourse.git.entities.Blob;
 
 import java.io.IOException;
 import java.nio.file.Files;

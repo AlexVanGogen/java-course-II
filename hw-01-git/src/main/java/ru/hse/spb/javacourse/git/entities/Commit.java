@@ -1,11 +1,13 @@
-package ru.hse.spb.javacourse.git;
+package ru.hse.spb.javacourse.git.entities;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import ru.hse.spb.javacourse.git.command.Add;
+import ru.hse.spb.javacourse.git.FileUtils;
+import ru.hse.spb.javacourse.git.NothingToCommitException;
+import ru.hse.spb.javacourse.git.RevisionNotFoundException;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
