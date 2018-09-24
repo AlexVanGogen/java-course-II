@@ -112,6 +112,13 @@ public class StatusChecker {
         return fileStates.get(pathAsString);
     }
 
+    public void removeFilesFromState(@NotNull List<String> files) throws IOException {
+        for (String file: files) {
+            fileStates.remove(file);
+        }
+        Files.write(GIT_FILE_STATES_PATH, Collections.singletonList(toJson()));
+    }
+
     private FileStatus recalculateStateForStagedFile(@NotNull Path pathToFile, @NotNull Stage stage) throws IOException {
         FileStatus state = stage.fileInStage(pathToFile.toString())
                 && contentsEqual(pathToFile, index.findLatestVersionOfFile(pathToFile)) ? FileStatus.STAGED : FileStatus.MODIFIED;
@@ -137,5 +144,17 @@ public class StatusChecker {
             JSONObject fileState = (JSONObject) nextFileState;
             fileStates.put(fileState.getString("path"), FileStatus.valueOf(fileState.getString("state")));
         }
+    }
+
+    @NotNull
+    private String toJson() {
+        JSONArray fileStatesData = new JSONArray();
+        for (Map.Entry<String, FileStatus> fileState: fileStates.entrySet()) {
+            JSONObject stateData = new JSONObject();
+            stateData.put("path", fileState.getKey());
+            stateData.put("state", fileState.getValue());
+            fileStatesData.put(stateData);
+        }
+        return fileStatesData.toString();
     }
 }

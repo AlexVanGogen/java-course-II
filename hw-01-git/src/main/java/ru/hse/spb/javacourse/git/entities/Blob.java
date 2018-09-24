@@ -3,6 +3,7 @@ package ru.hse.spb.javacourse.git.entities;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -74,8 +75,14 @@ public class Blob {
         return sha1;
     }
 
+    @NotNull
     public String getEncodedContents() {
         return contentsEncoded;
+    }
+
+    @Nullable
+    public Path getObjectCorrespondingToBlob() {
+        return GIT_OBJECTS_PATH.resolve(sha1Prefix).resolve(sha1Suffix);
     }
 
     private void writeToObjects() throws IOException {

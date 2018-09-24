@@ -1,8 +1,6 @@
 package ru.hse.spb.javacourse.git.command;
 
-import ru.hse.spb.javacourse.git.entities.Commit;
-import ru.hse.spb.javacourse.git.entities.FilesUnstager;
-import ru.hse.spb.javacourse.git.entities.Index;
+import ru.hse.spb.javacourse.git.entities.FileUnstager;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 
 import java.io.IOException;
@@ -17,7 +15,7 @@ public class Checkout extends GitCommand {
         }
         if (args.get(0).equals("--")) {
             List<String> filesToUnstage = args.subList(1, args.size());
-            FilesUnstager unstager = new FilesUnstager(filesToUnstage);
+            FileUnstager unstager = new FileUnstager(filesToUnstage);
             return unstager.unstage();
         } else {
             String revision = args.get(0);

@@ -15,6 +15,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static ru.hse.spb.javacourse.git.FileUtils.deleteDirectory;
+
 public class RepositoryManager {
 
     public static final Path GIT_ROOT_PATH = Paths.get(".jgit/");
@@ -104,7 +106,7 @@ public class RepositoryManager {
                 .filter(file -> file.toString().endsWith(".txt"))
                 .map(Path::toString)
                 .collect(Collectors.toList());
-        FilesUnstager unstager = new FilesUnstager(filePaths);
+        FileUnstager unstager = new FileUnstager(filePaths);
         unstager.unstage();
         index = unstager.getIndex();
         index.writeIndex();
@@ -164,12 +166,5 @@ public class RepositoryManager {
 
     private static boolean isRevisionNotExists(@NotNull String revision) {
         return !Files.exists(GIT_TREES_PATH.resolve(revision));
-    }
-
-    private static void deleteDirectory(Path path) throws IOException {
-        Files.walk(path)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
     }
 }

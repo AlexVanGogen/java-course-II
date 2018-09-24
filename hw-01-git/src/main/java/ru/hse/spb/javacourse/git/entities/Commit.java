@@ -189,7 +189,11 @@ public class Commit {
         if (Files.notExists(GIT_COMMITS_PATH)) {
             Files.createDirectory(GIT_COMMITS_PATH);
         }
-        Path commitPath = Files.createFile(Files.createDirectory(GIT_COMMITS_PATH.resolve(hashPrefix)).resolve(hashSuffix));
+        Path prefixedSubdirectory = GIT_COMMITS_PATH.resolve(hashPrefix);
+        if (Files.notExists(prefixedSubdirectory)) {
+            Files.createDirectory(prefixedSubdirectory);
+        }
+        Path commitPath = Files.createFile(prefixedSubdirectory.resolve(hashSuffix));
         Files.write(commitPath, Collections.singletonList(toJson().toString()));
     }
 

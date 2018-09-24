@@ -7,15 +7,19 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static ru.hse.spb.javacourse.git.FileUtils.deleteDirectory;
 import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_INDEX_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_OBJECTS_PATH;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_TREES_PATH;
 
 public class Index {
 
-    @NotNull List<Blob> indexedFiles;
+    @NotNull private List<Blob> indexedFiles;
 
     private Index() {
         indexedFiles = new ArrayList<>();
@@ -37,8 +41,26 @@ public class Index {
         );
     }
 
-    public void removeBlobIfExists(@NotNull Blob blob) {
+    public void removeBlobIfExists(@NotNull Blob blob, boolean removeAllReferences) throws IOException {
+        if (!indexedFiles.contains(blob)) {
+            return;
+        }
         indexedFiles.remove(blob);
+        if (removeAllReferences) {
+            Path pathToCorrespondingObject = blob.getObjectCorrespondingToBlob();
+            if (pathToCorrespondingObject != null) {
+                deleteDirectory(pathToCorrespondingObject.getParent());
+                removeBlobFromTrees(blob);
+            }
+        }
+    }
+
+    public void removeBlobsWithPath(@NotNull String pathToFile, boolean removeAllReferences) throws IOException {
+        for (Blob blobToRemove : indexedFiles.stream()
+                .filter(b -> b.getObjectQualifiedPath().toString().equals(pathToFile))
+                .collect(Collectors.toList())) {
+            removeBlobIfExists(blobToRemove, removeAllReferences);
+        }
     }
 
     public void updateIndex(int numberOfFilesChangedByRevertedCommit) {
@@ -67,5 +89,17 @@ public class Index {
             }
         }
         return null;
+    }
+
+    @NotNull public List<Blob> getIndexedFiles() {
+        return indexedFiles;
+    }
+
+    private void removeBlobFromTrees(@NotNull Blob blob) throws IOException {
+        for (Path path : Files.walk(GIT_TREES_PATH)
+                .filter(path -> path.endsWith(blob.getObjectQualifiedPath()))
+                .collect(Collectors.toList())) {
+            Files.deleteIfExists(path);
+        }
     }
 }
