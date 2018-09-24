@@ -4,7 +4,10 @@ import ru.hse.spb.javacourse.git.NothingToCommitException;
 import ru.hse.spb.javacourse.git.RepositoryManager;
 import ru.hse.spb.javacourse.git.Stage;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class Commit extends GitCommand {
@@ -21,6 +24,11 @@ public class Commit extends GitCommand {
             } else {
                 String message = args.get(0);
                 List<String> files = args.subList(1, args.size());
+                for (String nextPath: files) {
+                    if (Files.notExists(Paths.get(nextPath))) {
+                        return "File not found: " + nextPath;
+                    }
+                }
                 RepositoryManager.commit(message, files);
             }
         } catch (NothingToCommitException e) {

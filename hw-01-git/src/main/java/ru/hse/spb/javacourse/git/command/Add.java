@@ -1,14 +1,12 @@
 package ru.hse.spb.javacourse.git.command;
 
 import org.jetbrains.annotations.NotNull;
-import ru.hse.spb.javacourse.git.Blob;
-import ru.hse.spb.javacourse.git.FileAlreadyStagedException;
-import ru.hse.spb.javacourse.git.FileNotChangedException;
-import ru.hse.spb.javacourse.git.Stage;
+import ru.hse.spb.javacourse.git.*;
 import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -32,6 +30,10 @@ public class Add extends GitCommand {
             throw new GitCommandException();
         }
         for (String nextPath: args) {
+            if (Files.notExists(Paths.get(nextPath))) {
+                answerBuilder.append("File not found: ").append(nextPath).append("\n");
+                continue;
+            }
             try {
                 saveFile(nextPath);
             } catch (FileAlreadyStagedException e) {

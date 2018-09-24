@@ -216,6 +216,12 @@ public class GitTest {
     }
 
     @Test
+    void testAddAndCommitNonexistentFiles() throws IOException {
+        assertTrue(new Add().execute(Collections.singletonList("nonexistent101.txt")).contains("File not found: nonexistent101.txt"));
+        assertTrue(new Commit().execute(Arrays.asList("Add fake", "nonexistent101.txt")).contains("File not found: nonexistent101.txt"));
+    }
+
+    @Test
     private void commit() {
         assertDoesNotThrow(
                 () -> RepositoryManager.commit(
