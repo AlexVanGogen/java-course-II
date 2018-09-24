@@ -2,6 +2,7 @@ package ru.hse.spb.javacourse.git;
 
 import org.junit.jupiter.api.*;
 import ru.hse.spb.javacourse.git.command.Add;
+import ru.hse.spb.javacourse.git.command.Checkout;
 import ru.hse.spb.javacourse.git.command.Commit;
 import ru.hse.spb.javacourse.git.entities.RepositoryAlreadyInitializedException;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
@@ -222,6 +223,36 @@ public class GitTest {
     void testAddAndCommitNonexistentFiles() throws IOException {
         assertTrue(new Add().execute(Collections.singletonList("nonexistent101.txt")).contains("File not found: nonexistent101.txt"));
         assertTrue(new Commit().execute(Arrays.asList("Add fake", "nonexistent101.txt")).contains("File not found: nonexistent101.txt"));
+    }
+
+    @Test
+    void testUnstagingCheckoutOnUnstagedFile() throws IOException {
+        commit();
+
+        Files.write(BOOKS_TXT, Collections.singletonList(NEW_BOOK_CONTENTS));
+        assertEquals(NEW_BOOK_CONTENTS, String.join("\n", Files.readAllLines(BOOKS_TXT)));
+        assertDoesNotThrow(
+                () -> new Checkout().execute(Arrays.asList("--", BOOKS_TXT.toString()))
+        );
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(BOOKS_CONTENTS, String.join("\n", Files.readAllLines(BOOKS_TXT)));
+    }
+
+    @Test
+    void testUnstagingCheckoutOnStagedFile() throws IOException {
+        commit();
+
+        Files.write(BOOKS_TXT, Collections.singletonList(NEW_BOOK_CONTENTS));
+        assertDoesNotThrow(
+                () -> new Add().execute(Collections.singletonList(BOOKS_TXT.toString()))
+        );
+        assertDoesNotThrow(
+                () -> new Checkout().execute(Arrays.asList("--", BOOKS_TXT.toString()))
+        );
+        statusChecker.getActualFileStates();
+        assertEquals(FileStatus.UNCHANGED, statusChecker.getState(BOOKS_TXT.toString()));
+        assertEquals(BOOKS_CONTENTS, String.join("\n", Files.readAllLines(BOOKS_TXT)));
     }
 
     @Test

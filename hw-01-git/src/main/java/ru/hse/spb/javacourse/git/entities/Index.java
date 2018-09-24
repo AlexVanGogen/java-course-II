@@ -37,6 +37,10 @@ public class Index {
         );
     }
 
+    public void removeBlobIfExists(@NotNull Blob blob) {
+        indexedFiles.remove(blob);
+    }
+
     public void updateIndex(int numberOfFilesChangedByRevertedCommit) {
         indexedFiles = indexedFiles.subList(0, indexedFiles.size() - numberOfFilesChangedByRevertedCommit);
     }
