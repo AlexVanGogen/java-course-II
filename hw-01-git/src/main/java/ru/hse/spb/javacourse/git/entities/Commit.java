@@ -15,18 +15,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.*;
 
 public class Commit {
 
     private static final Path GIT_COMMITS_PATH = Paths.get(".jgit/objects/");
-    private static final Path GIT_REFS_PATH = Paths.get(".jgit/refs/");
-    private static final Path GIT_TREES_PATH = Paths.get(".jgit/trees/");
 
     private String hash;
     private String hashPrefix;
@@ -120,9 +117,8 @@ public class Commit {
         return new Commit(revision, commitData);
     }
 
-    public String log() throws IOException {
-        String headHash = getHead();
-        return hash + " [" + message + "] " + new Date(timestamp * 1000) + (hash.equals(headHash) ? " <- HEAD" : "");
+    public String log() {
+        return hash + " [" + message + "] " + new Date(timestamp * 1000);
     }
 
     public int getNumberOfCommittedFiles() {
@@ -201,7 +197,7 @@ public class Commit {
         JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
         for (Object nextReference: refsList) {
             JSONObject refJson = (JSONObject) nextReference;
-            if (refJson.getString("name").equals("HEAD")) {
+            if (refJson.getString("name").equals(HEAD_REF_NAME)) {
                 return refJson.getString("revision");
             }
         }
@@ -214,17 +210,19 @@ public class Commit {
         boolean isHeadFound = false;
         for (Object nextReference: refsList) {
             JSONObject refJson = (JSONObject) nextReference;
-            if (refJson.getString("name").equals("HEAD")) {
+            if (refJson.getString("name").equals(HEAD_REF_NAME) || refJson.getString("name").equals(currentBranch)) {
                 refJson.put("revision", hash);
                 isHeadFound = true;
             }
             updatedRefsList.put(refJson);
         }
         if (!isHeadFound) {
-            JSONObject headData = new JSONObject();
-            headData.put("name", "HEAD");
-            headData.put("revision", hash);
-            updatedRefsList.put(headData);
+            for (String refName : Arrays.asList(HEAD_REF_NAME, DEFAULT_BRANCH_NAME)) {
+                JSONObject headData = new JSONObject();
+                headData.put("name", refName);
+                headData.put("revision", hash);
+                updatedRefsList.put(headData);
+            }
         }
         Files.write(GIT_REFS_PATH, Collections.singletonList(updatedRefsList.toString()));
     }

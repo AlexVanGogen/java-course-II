@@ -4,14 +4,12 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +26,11 @@ public class RepositoryManager {
     public static final Path GIT_STAGE_PATH = Paths.get(".jgit/stage");
 
     private static Index index;
+
+    public static final String HEAD_REF_NAME = "HEAD";
+    public static final String DEFAULT_BRANCH_NAME = "master";
+
+    public static String currentBranch = DEFAULT_BRANCH_NAME;
 
     public static void initialize() throws RepositoryAlreadyInitializedException, IOException {
         if (isInitialized())
@@ -49,30 +52,32 @@ public class RepositoryManager {
             throw new RevisionNotFoundException(fromRevision);
         }
         List<String> log = new ArrayList<>();
+        RefList refList = new RefList();
         Commit currentCommit = Commit.ofHead();
         if (currentCommit == null) {
             return log;
         }
         while (!currentCommit.getHash().equals(fromRevision)) {
-            log.add(currentCommit.log());
+            log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
             currentCommit = Commit.ofRevision(currentCommit.getParentHash());
         }
-        log.add(currentCommit.log());
+        log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
         return log;
     }
 
     @NotNull
     public static List<String> showLog() throws IOException {
         List<String> log = new ArrayList<>();
+        RefList refList = new RefList();
         Commit currentCommit = Commit.ofHead();
         if (currentCommit == null) {
             return log;
         }
         while (currentCommit.getParentHash() != null) {
-            log.add(currentCommit.log());
+            log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
             currentCommit = Commit.ofRevision(currentCommit.getParentHash());
         }
-        log.add(currentCommit.log());
+        log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
         return log;
     }
 
@@ -86,6 +91,15 @@ public class RepositoryManager {
 
     public static void reset(@NotNull String revision) throws IOException {
         checkout(revision, true);
+    }
+
+    @NotNull
+    private static String withRefs(@NotNull String basicLog, @NotNull String revision, @NotNull RefList refList) {
+        List<String> refsToRevision = refList.getRefsToRevision(revision);
+        if (!refsToRevision.isEmpty()) {
+            basicLog += " <- " + String.join(", ", refsToRevision);
+        }
+        return basicLog;
     }
 
     private static void checkout(@NotNull String revision, boolean reset) throws IOException {
