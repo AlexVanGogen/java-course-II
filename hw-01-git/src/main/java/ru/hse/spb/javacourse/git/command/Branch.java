@@ -1,10 +1,8 @@
 package ru.hse.spb.javacourse.git.command;
 
 import org.jetbrains.annotations.NotNull;
+import ru.hse.spb.javacourse.git.entities.*;
 import ru.hse.spb.javacourse.git.entities.Commit;
-import ru.hse.spb.javacourse.git.entities.Ref;
-import ru.hse.spb.javacourse.git.entities.RefList;
-import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,12 +57,12 @@ public class Branch extends GitCommand {
         if (currentBranch.equals(branchName)) {
             return "Cannot remove current branch";
         }
-        final List<Commit> commitsOfBranch = RepositoryManager.getCommitsUptoRevision(branchRevision);
+        final List<Commit> commitsOfBranch = RepositoryManager.getCommitsUptoRevision(branchRevision, CheckoutKind.REVISION);
         final Set<String> allReferencedRevisions = refList.getAllReferencedRevisions();
         final List<String> allRevisionsUsedByOtherBranches = new ArrayList<>();
         for (final String referencedRevision : allReferencedRevisions) {
             if (!referencedRevision.equals(branchRevision)) {
-                allRevisionsUsedByOtherBranches.addAll(RepositoryManager.getCommitsUptoRevision(referencedRevision)
+                allRevisionsUsedByOtherBranches.addAll(RepositoryManager.getCommitsUptoRevision(referencedRevision, CheckoutKind.REVISION)
                         .stream()
                         .map(Commit::getHash)
                         .collect(Collectors.toList())

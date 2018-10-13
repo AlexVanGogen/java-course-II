@@ -166,10 +166,6 @@ public class Commit {
         updateRefs();
     }
 
-    public void setAsHead() throws IOException {
-        updateRefs();
-    }
-
     public JSONObject toJson() {
         JSONObject commitData = new JSONObject();
         commitData.put("tree", filesTree.getHash());
@@ -194,36 +190,22 @@ public class Commit {
     }
 
     private static String getHead() throws IOException {
-        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
-        for (Object nextReference: refsList) {
-            JSONObject refJson = (JSONObject) nextReference;
-            if (refJson.getString("name").equals(HEAD_REF_NAME)) {
-                return refJson.getString("revision");
-            }
-        }
-        return null;
+        RefList refList = new RefList();
+        return refList.getRevisionReferencedFromHead();
+//        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
+//        for (Object nextReference: refsList) {
+//            JSONObject refJson = (JSONObject) nextReference;
+//            if (refJson.getString("name").equals(HEAD_REF_NAME)) {
+//                return refJson.getString("revision");
+//            }
+//        }
+//        return null;
     }
 
     private void updateRefs() throws IOException {
-        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
-        JSONArray updatedRefsList = new JSONArray();
-        boolean isHeadFound = false;
-        for (Object nextReference: refsList) {
-            JSONObject refJson = (JSONObject) nextReference;
-            if (refJson.getString("name").equals(HEAD_REF_NAME) || refJson.getString("name").equals(currentBranch)) {
-                refJson.put("revision", hash);
-                isHeadFound = true;
-            }
-            updatedRefsList.put(refJson);
-        }
-        if (!isHeadFound) {
-            for (String refName : Arrays.asList(HEAD_REF_NAME, DEFAULT_BRANCH_NAME)) {
-                JSONObject headData = new JSONObject();
-                headData.put("name", refName);
-                headData.put("revision", hash);
-                updatedRefsList.put(headData);
-            }
-        }
-        Files.write(GIT_REFS_PATH, Collections.singletonList(updatedRefsList.toString()));
+        RefList refList = new RefList();
+        refList.update(HEAD_REF_NAME, currentBranch);
+        refList.update(currentBranch, hash);
+        refList.write();
     }
 }

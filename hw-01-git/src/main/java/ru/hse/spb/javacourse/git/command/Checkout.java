@@ -1,5 +1,6 @@
 package ru.hse.spb.javacourse.git.command;
 
+import ru.hse.spb.javacourse.git.entities.CheckoutKind;
 import ru.hse.spb.javacourse.git.entities.FileUnstager;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 
@@ -19,8 +20,8 @@ public class Checkout extends GitCommand {
             return unstager.unstage();
         } else {
             String revision = args.get(0);
-            RepositoryManager.checkout(revision);
-            return "Checkout to revision " + revision;
+            CheckoutKind kind = RepositoryManager.checkout(revision);
+            return String.format("Checkout to %s %s", (kind == CheckoutKind.REVISION ? "revision" : "branch"), revision);
         }
     }
 }

@@ -2,6 +2,7 @@ package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
+import ru.hse.spb.javacourse.git.command.Checkout;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.IOException;
@@ -53,7 +54,7 @@ public class RepositoryManager {
         }
         List<String> log = new ArrayList<>();
         RefList refList = new RefList();
-        List<Commit> commitsList = getCommitsUptoRevision(Commit.ofHead().getHash());
+        List<Commit> commitsList = getCommitsUptoRevision(HEAD_REF_NAME, CheckoutKind.BRANCH);
         for (final Commit nextCommit : commitsList) {
             if (nextCommit.getHash().equals(fromRevision)) {
                 log.add(withRefs(nextCommit.log(), nextCommit.getHash(), refList));
@@ -68,7 +69,7 @@ public class RepositoryManager {
     public static List<String> showLog() throws IOException {
         List<String> log = new ArrayList<>();
         RefList refList = new RefList();
-        getCommitsUptoRevision(Commit.ofHead().getHash()).forEach(commit -> {
+        getCommitsUptoRevision(HEAD_REF_NAME, CheckoutKind.BRANCH).forEach(commit -> {
             log.add(withRefs(commit.log(), commit.getHash(), refList));
         });
         return log;
@@ -78,8 +79,13 @@ public class RepositoryManager {
         Commit.makeAndSubmit(message, filenames);
     }
 
-    public static void checkout(@NotNull String revision) throws IOException {
-        checkout(revision, false);
+    @NotNull
+    public static CheckoutKind checkout(@NotNull String revisionOrPointer) throws IOException {
+        final CheckoutKind kind = checkout(revisionOrPointer, false);
+        if (kind == CheckoutKind.BRANCH) {
+            currentBranch = revisionOrPointer;
+        }
+        return kind;
     }
 
     public static void reset(@NotNull String revision) throws IOException {
@@ -87,9 +93,19 @@ public class RepositoryManager {
     }
 
     @NotNull
-    public static List<Commit> getCommitsUptoRevision(@NotNull String revision) throws IOException {
+    public static List<Commit> getCommitsUptoRevision(@NotNull String revisionOrPointer, @NotNull CheckoutKind kind) throws IOException {
+        RefList refList = new RefList();
         List<Commit> commits = new ArrayList<>();
-        Commit currentCommit = Commit.ofRevision(revision);
+        Commit currentCommit;
+        if (kind == CheckoutKind.BRANCH) {
+            final String revisionForRef = refList.getRevisionForRef(revisionOrPointer);
+            if (revisionForRef == null) {
+                throw new RevisionNotFoundException();
+            }
+            currentCommit = Commit.ofRevision(revisionForRef);
+        } else {
+            currentCommit = Commit.ofRevision(revisionOrPointer);
+        }
         while (currentCommit.getParentHash() != null) {
             commits.add(currentCommit);
             currentCommit = Commit.ofRevision(currentCommit.getParentHash());
@@ -112,12 +128,44 @@ public class RepositoryManager {
         deleteObjectCorrespondingTo(revision);
     }
 
-    private static void checkout(@NotNull String revision, boolean reset) throws IOException {
+    @NotNull
+    private static CheckoutKind checkout(@NotNull String revisionOrPointer, boolean reset) throws IOException {
         index = Index.getIndex();
-        if (isRevisionNotExists(revision)) {
-            throw new RevisionNotFoundException(revision);
+        RefList refList = new RefList();
+        CheckoutKind kind;
+        if (isRevisionNotExists(revisionOrPointer)) {
+            if (refList.getRevisionForRef(revisionOrPointer) == null) {
+                throw new RevisionNotFoundException(revisionOrPointer);
+            }
+            kind = CheckoutKind.BRANCH;
+        } else {
+            kind = CheckoutKind.REVISION;
         }
-        moveToRevision(revision, reset);
+        if (reset) {
+            moveToRevision(revisionOrPointer, true);
+            return kind;
+        }
+        final List<String> revisionsOfCurrentBranch = getCommitsUptoRevision(HEAD_REF_NAME, kind).stream().map(Commit::getHash).collect(Collectors.toList());
+        final List<Commit> commitsOfTargetBranch = getCommitsUptoRevision(revisionOrPointer, kind);
+        Commit latestCommonCommit = null;
+        List<Commit> commitsToRestore = new ArrayList<>();
+        for (final Commit earlierCommit : commitsOfTargetBranch) {
+            if (revisionsOfCurrentBranch.contains(earlierCommit.getHash())) {
+                latestCommonCommit = earlierCommit;
+                break;
+            }
+            commitsToRestore.add(earlierCommit);
+        }
+        if (latestCommonCommit != null) {
+            moveToRevision(latestCommonCommit.getHash(), reset);
+            Collections.reverse(commitsToRestore);
+            for (final Commit earlierCommit : commitsToRestore) {
+                earlierCommit.restoreChanges();
+            }
+            refList.update(HEAD_REF_NAME, revisionOrPointer);
+            refList.write();
+        }
+        return kind;
     }
 
     private static void moveToRevision(@NotNull String revision, boolean deleteNewerChanges) throws IOException {
@@ -168,7 +216,6 @@ public class RepositoryManager {
         RefList refList = new RefList();
         final String parentHash = Commit.ofRevision(revision).getParentHash();
         if (parentHash != null) {
-            refList.update(HEAD_REF_NAME, parentHash);
             refList.update(currentBranch, parentHash);
         }
         refList.write();
