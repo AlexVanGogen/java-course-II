@@ -53,15 +53,14 @@ public class RepositoryManager {
         }
         List<String> log = new ArrayList<>();
         RefList refList = new RefList();
-        Commit currentCommit = Commit.ofHead();
-        if (currentCommit == null) {
-            return log;
+        List<Commit> commitsList = getCommitsUptoRevision(Commit.ofHead().getHash());
+        for (final Commit nextCommit : commitsList) {
+            if (nextCommit.getHash().equals(fromRevision)) {
+                log.add(withRefs(nextCommit.log(), nextCommit.getHash(), refList));
+                break;
+            }
+            log.add(withRefs(nextCommit.log(), nextCommit.getHash(), refList));
         }
-        while (!currentCommit.getHash().equals(fromRevision)) {
-            log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
-            currentCommit = Commit.ofRevision(currentCommit.getParentHash());
-        }
-        log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
         return log;
     }
 
@@ -69,15 +68,9 @@ public class RepositoryManager {
     public static List<String> showLog() throws IOException {
         List<String> log = new ArrayList<>();
         RefList refList = new RefList();
-        Commit currentCommit = Commit.ofHead();
-        if (currentCommit == null) {
-            return log;
-        }
-        while (currentCommit.getParentHash() != null) {
-            log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
-            currentCommit = Commit.ofRevision(currentCommit.getParentHash());
-        }
-        log.add(withRefs(currentCommit.log(), currentCommit.getHash(), refList));
+        getCommitsUptoRevision(Commit.ofHead().getHash()).forEach(commit -> {
+            log.add(withRefs(commit.log(), commit.getHash(), refList));
+        });
         return log;
     }
 
@@ -94,12 +87,29 @@ public class RepositoryManager {
     }
 
     @NotNull
+    public static List<Commit> getCommitsUptoRevision(@NotNull String revision) throws IOException {
+        List<Commit> commits = new ArrayList<>();
+        Commit currentCommit = Commit.ofRevision(revision);
+        while (currentCommit.getParentHash() != null) {
+            commits.add(currentCommit);
+            currentCommit = Commit.ofRevision(currentCommit.getParentHash());
+        }
+        commits.add(currentCommit);
+        return commits;
+    }
+
+    @NotNull
     private static String withRefs(@NotNull String basicLog, @NotNull String revision, @NotNull RefList refList) {
         List<String> refsToRevision = refList.getRefsToRevision(revision);
         if (!refsToRevision.isEmpty()) {
             basicLog += " <- " + String.join(", ", refsToRevision);
         }
         return basicLog;
+    }
+
+    public static void deleteRevisionHistory(@NotNull String revision) throws IOException {
+        deleteTreeCorrespondingTo(revision);
+        deleteObjectCorrespondingTo(revision);
     }
 
     private static void checkout(@NotNull String revision, boolean reset) throws IOException {
@@ -125,12 +135,18 @@ public class RepositoryManager {
         index = unstager.getIndex();
         index.writeIndex();
 
+        RefList refList = new RefList();
         while (true) {
             String currentHeadHash = Commit.ofHead().getHash();
             if (currentHeadHash.equals(revision))
                 break;
             revertLastCommit();
-            revisionsForDeletion.add(currentHeadHash);
+            final List<String> refsToHeadRevision = refList.getRefsToRevision(currentHeadHash);
+            refsToHeadRevision.remove(HEAD_REF_NAME);
+            refsToHeadRevision.remove(currentBranch);
+            if (refsToHeadRevision.isEmpty()) {
+                revisionsForDeletion.add(currentHeadHash);
+            }
         }
         index.writeIndex();
         if (deleteNewerChanges) {
@@ -139,9 +155,8 @@ public class RepositoryManager {
         }
     }
 
-    private static void revertLastCommit() throws IOException {
-        Commit currentHead = Commit.ofHead();
-        List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(currentHead.getHash()));
+    private static void revertCommit(@NotNull String revision) throws IOException {
+        List<Blob> committedFiles = CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(revision));
         for (Blob nextCommittedFile: committedFiles) {
             Blob previousVersion = index.findPreviousVersionOfFile(nextCommittedFile);
             if (previousVersion == null) {
@@ -150,10 +165,19 @@ public class RepositoryManager {
                 Files.write(previousVersion.getObjectQualifiedPath(), Collections.singletonList(previousVersion.decodeContents()));
             }
         }
-        if (currentHead.getParentHash() != null) {
-            Commit.ofRevision(currentHead.getParentHash()).setAsHead();
+        RefList refList = new RefList();
+        final String parentHash = Commit.ofRevision(revision).getParentHash();
+        if (parentHash != null) {
+            refList.update(HEAD_REF_NAME, parentHash);
+            refList.update(currentBranch, parentHash);
         }
+        refList.write();
         index.updateIndex(committedFiles.size());
+    }
+
+    private static void revertLastCommit() throws IOException {
+        Commit currentHead = Commit.ofHead();
+        revertCommit(currentHead.getHash());
     }
 
     private static boolean isInitialized() {
@@ -162,19 +186,27 @@ public class RepositoryManager {
 
     private static void deleteTreesCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
         for (String revision: revisionsForDeletion) {
-            Path pathForDeletion = GIT_TREES_PATH.resolve(revision);
-            deleteDirectory(pathForDeletion);
+            deleteTreeCorrespondingTo(revision);
         }
+    }
+
+    private static void deleteTreeCorrespondingTo(String revision) throws IOException {
+        Path pathForDeletion = GIT_TREES_PATH.resolve(revision);
+        deleteDirectory(pathForDeletion);
     }
 
     private static void deleteObjectsCorrespondingTo(List<String> revisionsForDeletion) throws IOException {
         for (String revision: revisionsForDeletion) {
-            Path pathForDeletion = GIT_OBJECTS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
+            deleteObjectCorrespondingTo(revision);
+        }
+    }
+
+    private static void deleteObjectCorrespondingTo(String revision) throws IOException {
+        Path pathForDeletion = GIT_OBJECTS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
+        Files.delete(pathForDeletion);
+        while (pathForDeletion.getParent() != null && Files.list(pathForDeletion.getParent()).count() == 0) {
+            pathForDeletion = pathForDeletion.getParent();
             Files.delete(pathForDeletion);
-            while (pathForDeletion.getParent() != null && Files.list(pathForDeletion.getParent()).count() == 0) {
-                pathForDeletion = pathForDeletion.getParent();
-                Files.delete(pathForDeletion);
-            }
         }
     }
 

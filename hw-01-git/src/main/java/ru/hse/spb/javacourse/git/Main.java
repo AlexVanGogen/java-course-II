@@ -46,6 +46,9 @@ public class Main {
                 case "rm":
                     gitCommand = new Rm();
                     break;
+                case "branch":
+                    gitCommand = new Branch();
+                    break;
                 default:
                     System.out.println("Unknown command: " + command);
                     return;

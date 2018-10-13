@@ -7,16 +7,13 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_REFS_PATH;
 
 public class RefList {
-    @NotNull private Map<String, List<String>> refs;
+    @NotNull private Map<String, ArrayList<String>> refs;
 
     public RefList() throws IOException {
         final List<Object> list = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(","))).toList();
@@ -24,11 +21,11 @@ public class RefList {
                 .stream()
                 .map(o -> new JSONObject((HashMap) o))
                 .map(Ref::new)
-                .collect(Collectors.groupingBy(Ref::getRevision, Collectors.mapping(Ref::getName, Collectors.toList())));
+                .collect(Collectors.groupingBy(Ref::getRevision, Collectors.mapping(Ref::getName, Collectors.toCollection(ArrayList::new))));
     }
 
     public @Nullable String getRevisionForRef(@NotNull String refName) {
-        final Map.Entry<String, List<String>> refRecord = refs.entrySet()
+        final Map.Entry<String, ArrayList<String>> refRecord = refs.entrySet()
                 .stream()
                 .filter(e -> e.getValue().contains(refName))
                 .findFirst()
@@ -37,14 +34,15 @@ public class RefList {
     }
 
     public @NotNull List<String> getRefsToRevision(@NotNull String revision) {
-        return refs.getOrDefault(revision, Collections.emptyList());
+        return refs.getOrDefault(revision, new ArrayList<>());
     }
 
     public void add(@NotNull Ref ref) {
         if (!refs.containsKey(ref.getRevision())) {
-            refs.put(ref.getRevision(), Collections.emptyList());
+            refs.put(ref.getRevision(), new ArrayList<>());
         }
-        refs.get(ref.getRevision()).add(ref.getName());
+        final List<String> revisions = refs.get(ref.getRevision());
+        revisions.add(ref.getName());
     }
 
     public void update(@NotNull String refName, @NotNull String revision) {
@@ -53,16 +51,21 @@ public class RefList {
     }
 
     public void remove(@NotNull String refName) {
-        refs.forEach((name, refsList) -> refsList.remove(refName));
+        refs.forEach((revisionName, refsList) -> refsList.remove(refName));
+    }
+
+    @NotNull
+    public Set<String> getAllReferencedRevisions() {
+        return refs.keySet();
     }
 
     public void write() throws IOException {
         JSONArray refsJson = new JSONArray();
-        refs.forEach((name, refsList) -> {
+        refs.forEach((revisionName, refsList) -> {
             refsList.forEach(ref -> {
                 JSONObject refJson = new JSONObject();
-                refJson.put("name", name);
-                refJson.put("revision", ref);
+                refJson.put("name", ref);
+                refJson.put("revision", revisionName);
                 refsJson.put(refJson);
             });
         });

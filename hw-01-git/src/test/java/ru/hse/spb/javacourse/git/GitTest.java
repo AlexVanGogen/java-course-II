@@ -81,7 +81,7 @@ public class GitTest {
         List<String> log = RepositoryManager.showLog();
         assertEquals(4, log.size());
         assertTrue(log.get(0).contains(COMMIT4_MESSAGE));
-        assertTrue(log.get(0).endsWith("HEAD"));
+        assertTrue(log.get(0).contains("HEAD"));
         assertTrue(log.get(1).contains(COMMIT3_MESSAGE));
         assertTrue(log.get(2).contains(COMMIT2_MESSAGE));
         assertTrue(log.get(3).contains(COMMIT1_MESSAGE));
@@ -98,7 +98,7 @@ public class GitTest {
         log = RepositoryManager.showLog();
         assertEquals(3, log.size());
         assertTrue(log.get(0).contains(COMMIT3_MESSAGE));
-        assertTrue(log.get(0).endsWith("HEAD"));
+        assertTrue(log.get(0).contains("HEAD"));
         assertTrue(log.get(1).contains(COMMIT2_MESSAGE));
         assertTrue(log.get(2).contains(COMMIT1_MESSAGE));
         assertEquals(WORD_CONTENTS, Files.lines(WORD_TXT).collect(Collectors.joining()));
@@ -108,7 +108,7 @@ public class GitTest {
         log = RepositoryManager.showLog();
         assertEquals(2, log.size());
         assertTrue(log.get(0).contains(COMMIT2_MESSAGE));
-        assertTrue(log.get(0).endsWith("HEAD"));
+        assertTrue(log.get(0).contains("HEAD"));
         assertTrue(log.get(1).contains(COMMIT1_MESSAGE));
         assertTrue(Files.notExists(WORD_TXT));
         assertTrue(Files.notExists(NUMBERS_TXT));
