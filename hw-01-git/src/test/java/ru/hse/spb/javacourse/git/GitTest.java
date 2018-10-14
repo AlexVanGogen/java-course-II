@@ -1,9 +1,7 @@
 package ru.hse.spb.javacourse.git;
 
 import org.junit.jupiter.api.*;
-import ru.hse.spb.javacourse.git.command.Add;
-import ru.hse.spb.javacourse.git.command.Checkout;
-import ru.hse.spb.javacourse.git.command.Commit;
+import ru.hse.spb.javacourse.git.command.*;
 import ru.hse.spb.javacourse.git.entities.RepositoryAlreadyInitializedException;
 import ru.hse.spb.javacourse.git.entities.RepositoryManager;
 import ru.hse.spb.javacourse.git.entities.Stage;
@@ -30,16 +28,22 @@ public class GitTest {
     private static final Path NUMBERS_TXT = DATA_PATH.resolve("numbers.txt");
     private static final Path WORD_PATH = DATA_PATH.resolve("word");
     private static final Path WORD_TXT = WORD_PATH.resolve("word.txt");
+    private static final Path WORDS_TXT = WORD_PATH.resolve("words.txt");
     private static final String BOOKS_CONTENTS = "Harry Potter";
     private static final String LETTERS_CONTENTS = "abacaba";
     private static final String NUMBERS_CONTENTS = "1234567890";
     private static final String WORD_CONTENTS = "kidding";
     private static final String NEW_WORD_CONTENTS = "bamboozled";
     private static final String NEW_BOOK_CONTENTS = "Harry Potter and Java Memory Model";
+    private static final String WORDS_CONTENTS = "lalala lalala";
     private static final String COMMIT1_MESSAGE = "Add books.txt";
     private static final String COMMIT2_MESSAGE = "Add letters.txt";
     private static final String COMMIT3_MESSAGE = "Add numbers.txt and word/word.txt";
     private static final String COMMIT4_MESSAGE = "Change word/word.txt";
+    private static final String COMMIT5_MESSAGE = "Add word/words.txt";
+    private static final String BRANCH1_NAME = "branch1";
+    private static final String BRANCH2_NAME = "branch2";
+    private static final String MASTER_BRANCH_NAME = "master";
 
     private StatusChecker statusChecker;
 
@@ -256,24 +260,138 @@ public class GitTest {
     }
 
     @Test
+    void testCheckoutFastForwardBranches() throws IOException {
+        commit();
+        branch1();
+        checkoutBranch1();
+        assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        commitChange();
+        assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        for (int i = 0; i < 10; i++) {
+            checkoutMaster();
+            assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+            checkoutBranch1();
+            assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        }
+    }
+
+    @Test
+    void testCheckoutForkedBranches() throws IOException {
+        commit1();
+        commit2();
+        branch1();
+        checkoutBranch1();
+        commit3();
+        assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        assertEquals(NUMBERS_CONTENTS, String.join("\n", Files.readAllLines(NUMBERS_TXT)));
+        assertFalse(Files.exists(WORDS_TXT));
+        checkoutMaster();
+        branch2();
+        checkoutBranch2();
+        commitChange();
+        Files.write(WORDS_TXT, Collections.singletonList(WORDS_CONTENTS));
+        commit4();
+        assertEquals(WORDS_CONTENTS, String.join("\n", Files.readAllLines(WORDS_TXT)));
+        assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        assertFalse(Files.exists(NUMBERS_TXT));
+        for (int i = 0; i < 10; i++) {
+            checkoutBranch1();
+            assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+            assertEquals(NUMBERS_CONTENTS, String.join("\n", Files.readAllLines(NUMBERS_TXT)));
+            assertFalse(Files.exists(WORDS_TXT));
+            checkoutBranch2();
+            assertEquals(WORDS_CONTENTS, String.join("\n", Files.readAllLines(WORDS_TXT)));
+            assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+            assertFalse(Files.exists(NUMBERS_TXT));
+        }
+    }
+
+    @Test
     private void commit() {
+        commit1();
+        commit2();
+        commit3();
+    }
+
+    @Test
+    private void commit1() {
         assertDoesNotThrow(
-                () -> RepositoryManager.commit(
+                () -> new Commit().execute(Arrays.asList(
                         COMMIT1_MESSAGE,
-                        Collections.singletonList(BOOKS_TXT.toString())
-                )
+                        BOOKS_TXT.toString()
+                ))
         );
+    }
+
+    @Test
+    private void commit2() {
         assertDoesNotThrow(
-                () -> RepositoryManager.commit(
+                () -> new Commit().execute(Arrays.asList(
                         COMMIT2_MESSAGE,
-                        Collections.singletonList(LETTERS_TXT.toString())
-                )
+                        LETTERS_TXT.toString()
+                ))
         );
+    }
+
+    @Test
+    private void commit3() {
         assertDoesNotThrow(
-                () -> RepositoryManager.commit(
+                () -> new Commit().execute(Arrays.asList(
                         COMMIT3_MESSAGE,
-                        Arrays.asList(NUMBERS_TXT.toString(), WORD_TXT.toString())
-                )
+                        NUMBERS_TXT.toString(), WORD_TXT.toString()
+                ))
+        );
+    }
+
+    @Test
+    private void commit4() {
+        assertDoesNotThrow(
+                () -> new Commit().execute(Arrays.asList(
+                        COMMIT5_MESSAGE,
+                        WORDS_TXT.toString()
+                ))
+        );
+    }
+
+    @Test
+    private void branch1() {
+        assertDoesNotThrow(
+                () -> new Branch().execute(Collections.singletonList(BRANCH1_NAME))
+        );
+    }
+
+    @Test
+    private void branch2() {
+        assertDoesNotThrow(
+                () -> new Branch().execute(Collections.singletonList(BRANCH2_NAME))
+        );
+    }
+
+    @Test
+    private void checkoutBranch1() {
+        assertDoesNotThrow(
+                () -> new Checkout().execute(Collections.singletonList(BRANCH1_NAME))
+        );
+    }
+
+    @Test
+    private void checkoutBranch2() {
+        assertDoesNotThrow(
+                () -> new Checkout().execute(Collections.singletonList(BRANCH2_NAME))
+        );
+    }
+
+    @Test
+    private void checkoutMaster() {
+        assertDoesNotThrow(
+                () -> new Checkout().execute(Collections.singletonList(MASTER_BRANCH_NAME))
+        );
+    }
+
+    @Test
+    private void mergeBranch1() {
+        assertDoesNotThrow(
+                () -> new Merge().execute(Collections.singletonList(BRANCH1_NAME))
         );
     }
 
@@ -292,10 +410,23 @@ public class GitTest {
         assertDoesNotThrow(
                 () -> {
                     Files.write(WORD_TXT, Collections.singletonList(NEW_WORD_CONTENTS));
-                    RepositoryManager.commit(
+                    new Commit().execute(Arrays.asList(
                             COMMIT4_MESSAGE,
-                            Collections.singletonList(WORD_TXT.toString())
-                    );
+                            WORD_TXT.toString()
+                    ));
+                }
+        );
+    }
+
+    @Test
+    private void commitChange2() {
+        assertDoesNotThrow(
+                () -> {
+                    Files.write(WORD_TXT, Collections.singletonList(NEW_WORD_CONTENTS + "!!!"));
+                    new Commit().execute(Arrays.asList(
+                            COMMIT4_MESSAGE,
+                            WORD_TXT.toString()
+                    ));
                 }
         );
     }
@@ -324,5 +455,6 @@ public class GitTest {
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete);
+        Files.deleteIfExists(path);
     }
 }

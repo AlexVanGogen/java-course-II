@@ -3,6 +3,7 @@ package ru.hse.spb.javacourse.git.entities;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import ru.hse.spb.javacourse.git.command.Checkout;
+import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.IOException;
@@ -85,11 +86,14 @@ public class RepositoryManager {
         if (kind == CheckoutKind.BRANCH) {
             currentBranch = revisionOrPointer;
         }
+        index.writeIndex();
+//        new StatusChecker().getActualFileStates();
         return kind;
     }
 
     public static void reset(@NotNull String revision) throws IOException {
         checkout(revision, true);
+//        new StatusChecker().getActualFileStates();
     }
 
     @NotNull
@@ -162,6 +166,7 @@ public class RepositoryManager {
             for (final Commit earlierCommit : commitsToRestore) {
                 earlierCommit.restoreChanges();
             }
+            index = Index.getIndex();
             refList.update(HEAD_REF_NAME, revisionOrPointer);
             refList.write();
         }
@@ -208,7 +213,7 @@ public class RepositoryManager {
         for (Blob nextCommittedFile: committedFiles) {
             Blob previousVersion = index.findPreviousVersionOfFile(nextCommittedFile);
             if (previousVersion == null) {
-                Files.delete(nextCommittedFile.getObjectQualifiedPath());
+                Files.deleteIfExists(nextCommittedFile.getObjectQualifiedPath());
             } else {
                 Files.write(previousVersion.getObjectQualifiedPath(), Collections.singletonList(previousVersion.decodeContents()));
             }

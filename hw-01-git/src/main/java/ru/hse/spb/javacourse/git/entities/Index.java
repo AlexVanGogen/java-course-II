@@ -64,7 +64,11 @@ public class Index {
     }
 
     public void updateIndex(int numberOfFilesChangedByRevertedCommit) {
-        indexedFiles = indexedFiles.subList(0, indexedFiles.size() - numberOfFilesChangedByRevertedCommit);
+        if (indexedFiles.size() <= numberOfFilesChangedByRevertedCommit) {
+            indexedFiles.clear();
+        } else {
+            indexedFiles = indexedFiles.subList(0, indexedFiles.size() - numberOfFilesChangedByRevertedCommit);
+        }
     }
 
     @Nullable

@@ -71,15 +71,18 @@ public final class TreeNode extends Node {
 
     @Override
     public void write(boolean saveBlob) throws IOException {
-        Files.createDirectory(root.getRootDirectory().resolve(path));
+        final Path path = root.getRootDirectory().resolve(this.path);
+        if (Files.notExists(path)) {
+            Files.createDirectory(path);
+        }
         for (Node node : subNodes) {
             node.write(saveBlob);
         }
         Path dataFilePath;
-        if (path.getParent() == null)
+        if (this.path.getParent() == null)
             dataFilePath = root.getRootDirectory().resolve("tree_data");
         else
-            dataFilePath = root.getRootDirectory().resolve(path.toString()).resolve("tree_data");
+            dataFilePath = root.getRootDirectory().resolve(this.path.toString()).resolve("tree_data");
         Path file;
         if (Files.exists(dataFilePath))
             file = dataFilePath;
@@ -87,7 +90,7 @@ public final class TreeNode extends Node {
         JSONObject subtreeData = new JSONObject();
         subtreeData.put("type", "tree");
         subtreeData.put("hash", getHash());
-        subtreeData.put("path", path.toString());
+        subtreeData.put("path", this.path.toString());
         Files.write(file, Collections.singletonList(subtreeData.toString()), StandardOpenOption.APPEND);
     }
 

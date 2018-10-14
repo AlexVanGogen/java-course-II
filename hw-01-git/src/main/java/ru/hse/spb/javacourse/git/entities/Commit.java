@@ -119,6 +119,7 @@ public class Commit {
         Stage stage = Stage.getStage();
         filesThatWillBeCommitted.forEach(stage::removeFromStageIfExists);
         stage.writeStage();
+        statusChecker.getActualFileStates();
     }
 
     public static void makeAndSubmitStaged(@NotNull String message, @NotNull Stage stage) throws IOException, NothingToCommitException {
@@ -148,6 +149,7 @@ public class Commit {
                 Files.createFile(fileToRestorePath);
             }
             Files.write(fileToRestorePath, Collections.singletonList(nextChangedFile.decodeContents()));
+            nextChangedFile.save();
         }
     }
 

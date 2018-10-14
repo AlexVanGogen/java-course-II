@@ -14,6 +14,7 @@ public class Checkout extends GitCommand {
         if (args.isEmpty()) {
             throw new GitCommandException();
         }
+
         if (args.get(0).equals("--")) {
             List<String> filesToUnstage = args.subList(1, args.size());
             FileUnstager unstager = new FileUnstager(filesToUnstage);
