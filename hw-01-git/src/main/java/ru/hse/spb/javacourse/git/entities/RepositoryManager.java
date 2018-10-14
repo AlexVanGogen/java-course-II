@@ -106,9 +106,9 @@ public class RepositoryManager {
         } else {
             currentCommit = Commit.ofRevision(revisionOrPointer);
         }
-        while (currentCommit.getParentHash() != null) {
+        while (currentCommit.hasParents()) {
             commits.add(currentCommit);
-            currentCommit = Commit.ofRevision(currentCommit.getParentHash());
+            currentCommit = Commit.ofRevision(currentCommit.getParentHash(0));
         }
         commits.add(currentCommit);
         return commits;
@@ -214,8 +214,9 @@ public class RepositoryManager {
             }
         }
         RefList refList = new RefList();
-        final String parentHash = Commit.ofRevision(revision).getParentHash();
-        if (parentHash != null) {
+        final Commit commit = Commit.ofRevision(revision);
+        if (commit.hasParents()) {
+            final String parentHash = commit.getParentHash(0);
             refList.update(currentBranch, parentHash);
         }
         refList.write();

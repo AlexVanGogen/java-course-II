@@ -34,6 +34,14 @@ public class Commit {
     private long timestamp;
     private List<Path> committingFiles;
 
+    /* First parent is always the parent that was assigned to commit after submitting;
+       second parent (if presented) refers to branch that was merged to the branch
+       the first parent refers to ("original branch").
+       Since we do not support `octopus` merge strategy, a commit can not have more than
+       two parents.
+     */
+    private List<String> parentHashes = new ArrayList<>();
+
     private Commit(@NotNull String message, @NotNull List<String> committingFileNames) {
         this.message = message;
         committingFiles = new ArrayList<>();
@@ -42,13 +50,14 @@ public class Commit {
         }
     }
 
-    private Commit(@NotNull String hash, long timestamp, @NotNull String message, @Nullable String parentHash) throws IOException {
+    private Commit(@NotNull String hash, long timestamp, @NotNull String message, @NotNull List<String> parentHashes) throws IOException {
         this.hash = hash;
         this.hashPrefix = hash.substring(0, 2);
         this.hashSuffix = hash.substring(2);
         this.timestamp = timestamp;
         this.message = message;
-        this.parentHash = parentHash;
+        this.parentHashes = parentHashes;
+//        this.parentHash = parentHash;
         this.committingFiles = Files.walk(GIT_TREES_PATH.resolve(hash))
                 .filter(FileUtils::isTextFile)
                 .collect(Collectors.toList());
@@ -63,8 +72,33 @@ public class Commit {
                 hash,
                 commitData.getLong("timestamp"),
                 commitData.getString("message"),
-                commitData.has("parent") ? commitData.getString("parent") : null
+                commitData.has("parents")
+                        ? commitData.getJSONArray("parents").toList()
+                            .stream()
+                            .map(o -> (String) o)
+                            .collect(Collectors.toList())
+                        : Collections.emptyList()
         );
+    }
+
+    @Nullable
+    public static Commit ofHead() throws IOException {
+        String headHash = getHead();
+        if (headHash == null) {
+            return null;
+        }
+        return ofRevision(headHash);
+    }
+
+    @NotNull
+    public static Commit ofRevision(@NotNull String revision) throws IOException {
+        Path revisionPath = GIT_COMMITS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
+        if (Files.notExists(revisionPath)) {
+            throw new RevisionNotFoundException(revision);
+        }
+        Stream<String> commitInfoLines = Files.lines(revisionPath);
+        JSONObject commitData = new JSONObject(commitInfoLines.collect(Collectors.joining(",")));
+        return new Commit(revision, commitData);
     }
 
     public static void makeAndSubmit(@NotNull String message, @NotNull List<String> committingFileNames) throws IOException, NothingToCommitException {
@@ -97,26 +131,6 @@ public class Commit {
         stage.resetStage();
     }
 
-    @Nullable
-    public static Commit ofHead() throws IOException {
-        String headHash = getHead();
-        if (headHash == null) {
-            return null;
-        }
-        return ofRevision(headHash);
-    }
-
-    @NotNull
-    public static Commit ofRevision(@NotNull String revision) throws IOException {
-        Path revisionPath = GIT_COMMITS_PATH.resolve(revision.substring(0, 2)).resolve(revision.substring(2));
-        if (Files.notExists(revisionPath)) {
-            throw new RevisionNotFoundException(revision);
-        }
-        Stream<String> commitInfoLines = Files.lines(revisionPath);
-        JSONObject commitData = new JSONObject(commitInfoLines.collect(Collectors.joining(",")));
-        return new Commit(revision, commitData);
-    }
-
     public String log() {
         return hash + " [" + message + "] " + new Date(timestamp * 1000);
     }
@@ -141,8 +155,16 @@ public class Commit {
         return hash;
     }
 
-    public String getParentHash() {
-        return parentHash;
+    public String getParentHash(int i) {
+        return parentHashes.get(i);
+    }
+
+    public List<String> getParentsHashes() {
+        return parentHashes;
+    }
+
+    public boolean hasParents() {
+        return !parentHashes.isEmpty();
     }
 
     public String getMessage() {
@@ -154,7 +176,11 @@ public class Commit {
     }
 
     private void submit(boolean saveBlob) throws IOException {
-        parentHash = getHead();
+//        parentHash = getHead();
+        final String hashOfHead = getHead();
+        if (hashOfHead != null) {
+            parentHashes.add(hashOfHead);
+        }
         timestamp = Instant.now().getEpochSecond();
         hash = DigestUtils.sha1Hex(String.valueOf(timestamp) + message);
         hashPrefix = hash.substring(0, 2);
@@ -169,8 +195,9 @@ public class Commit {
     public JSONObject toJson() {
         JSONObject commitData = new JSONObject();
         commitData.put("tree", filesTree.getHash());
-        if (parentHash != null) {
-            commitData.put("parent", parentHash);
+        if (!parentHashes.isEmpty()) {
+            JSONArray parentsJSON = new JSONArray(parentHashes);
+            commitData.put("parents", parentsJSON);
         }
         commitData.put("timestamp", timestamp);
         commitData.put("message", message);
@@ -192,14 +219,6 @@ public class Commit {
     private static String getHead() throws IOException {
         RefList refList = new RefList();
         return refList.getRevisionReferencedFromHead();
-//        JSONArray refsList = new JSONArray(Files.lines(GIT_REFS_PATH).collect(Collectors.joining(",")));
-//        for (Object nextReference: refsList) {
-//            JSONObject refJson = (JSONObject) nextReference;
-//            if (refJson.getString("name").equals(HEAD_REF_NAME)) {
-//                return refJson.getString("revision");
-//            }
-//        }
-//        return null;
     }
 
     private void updateRefs() throws IOException {

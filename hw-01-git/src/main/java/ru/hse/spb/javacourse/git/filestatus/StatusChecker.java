@@ -32,7 +32,7 @@ public class StatusChecker {
     public StatusChecker() throws IOException { }
 
     /**
-     * Give status to every file in the root directory.
+     * Give status to every file committed with commits of current branch.
      *
      * 1) A file is staged, if corresponding record exists in `stages` file
      *    and it weren't modified since staging.
@@ -49,11 +49,16 @@ public class StatusChecker {
         index = Index.getIndex();
         Stage stage = Stage.getStage();
         Commit lastCommit = Commit.ofHead();
+
         Set<Blob> committedFiles = new TreeSet<>(Comparator.comparing(Blob::getObjectQualifiedPath));
         if (lastCommit != null) {
             committedFiles.addAll(CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(lastCommit.getHash())));
-            while (lastCommit.getParentHash() != null) {
-                lastCommit = Commit.ofRevision(lastCommit.getParentHash());
+            while (lastCommit.hasParents()) {
+                /*
+                    The "original branch" has all actual file states; files committed in merged branches
+                    are included to the merging commit (and belong to the "original branch" too).
+                 */
+                lastCommit = Commit.ofRevision(lastCommit.getParentHash(0));
                 committedFiles.addAll(CommitFilesTree.getAllCommittedFiles(GIT_TREES_PATH.resolve(lastCommit.getHash())));
             }
         }
