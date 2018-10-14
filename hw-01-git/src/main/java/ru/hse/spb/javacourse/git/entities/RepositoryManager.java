@@ -134,7 +134,7 @@ public class RepositoryManager {
         RefList refList = new RefList();
         CheckoutKind kind;
         if (isRevisionNotExists(revisionOrPointer)) {
-            if (refList.getRevisionForRef(revisionOrPointer) == null) {
+            if (!refList.hasBranch(revisionOrPointer)) {
                 throw new RevisionNotFoundException(revisionOrPointer);
             }
             kind = CheckoutKind.BRANCH;

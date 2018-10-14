@@ -49,6 +49,9 @@ public class Main {
                 case "branch":
                     gitCommand = new Branch();
                     break;
+                case "merge":
+                    gitCommand = new Merge();
+                    break;
                 default:
                     System.out.println("Unknown command: " + command);
                     return;

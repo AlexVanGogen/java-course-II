@@ -25,7 +25,7 @@ public class Commit {
 
     private static final Path GIT_COMMITS_PATH = Paths.get(".jgit/objects/");
 
-    private String hash;
+    private String hash = null;
     private String hashPrefix;
     private String hashSuffix;
     private String parentHash;

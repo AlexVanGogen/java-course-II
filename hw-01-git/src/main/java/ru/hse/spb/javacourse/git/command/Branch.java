@@ -35,7 +35,7 @@ public class Branch extends GitCommand {
     @NotNull
     private String executeNewBranch(@NotNull String branchName) throws IOException {
         RefList refList = new RefList();
-        if (refList.getRevisionForRef(branchName) != null) {
+        if (refList.hasBranch(branchName)) {
             return String.format("Branch with name %s already exists", branchName);
         }
         String headRevision = refList.getRevisionForRef(HEAD_REF_NAME);

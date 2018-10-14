@@ -56,6 +56,10 @@ public class RefList {
         return refsToRevision;
     }
 
+    public boolean hasBranch(@NotNull String branch) {
+        return getRevisionForRef(branch) != null;
+    }
+
     public void add(@NotNull Ref ref) {
         if (!refs.containsKey(ref.getRevision())) {
             refs.put(ref.getRevision(), new ArrayList<>());
