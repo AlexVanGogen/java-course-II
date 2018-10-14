@@ -10,6 +10,7 @@ import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -307,6 +308,67 @@ public class GitTest {
     }
 
     @Test
+    void testFastForwardMerge() throws IOException {
+        commit();
+        branch1();
+        checkoutBranch1();
+        assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        commitChange();
+        assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        checkoutMaster();
+        assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        mergeBranch1();
+        assertEquals(NEW_WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        List<String> log = RepositoryManager.showLog();
+        assertEquals(4, log.size());
+        assertTrue(log.get(0).contains(BRANCH1_NAME));
+        assertTrue(log.get(0).contains(MASTER_BRANCH_NAME));
+        assertTrue(log.get(0).contains("HEAD"));
+    }
+
+    @Test
+    void testMergeWithConflicts() throws IOException {
+        commit();
+        branch1();
+        checkoutBranch1();
+        commitChange();
+        checkoutMaster();
+        branch2();
+        checkoutBranch2();
+        commitChange2();
+        mergeBranch1();
+        final List<String> strings = Files.readAllLines(WORD_TXT);
+        assertEquals(5, strings.size());
+        assertEquals("<<<<<<< HEAD", strings.get(0));
+        assertEquals(NEW_WORD_CONTENTS + "!!!", strings.get(1));
+        assertEquals("=======", strings.get(2));
+        assertEquals(NEW_WORD_CONTENTS, strings.get(3));
+        assertEquals(">>>>>>> " + BRANCH1_NAME, strings.get(4));
+    }
+
+    @Test
+    void testMergeWithoutConflicts() throws IOException {
+        commit1();
+        commit2();
+        branch1();
+        checkoutBranch1();
+        commit3();
+        checkoutMaster();
+        branch2();
+        checkoutBranch2();
+        commit4();
+        assertFalse(Files.exists(NUMBERS_TXT));
+        assertFalse(Files.exists(WORD_TXT));
+        assertTrue(Files.exists(WORDS_TXT));
+        mergeBranch1();
+        assertTrue(Files.exists(NUMBERS_TXT));
+        assertTrue(Files.exists(WORD_TXT));
+        assertTrue(Files.exists(WORDS_TXT));
+        assertEquals(WORD_CONTENTS, String.join("\n", Files.readAllLines(WORD_TXT)));
+        assertEquals(NUMBERS_CONTENTS, String.join("\n", Files.readAllLines(NUMBERS_TXT)));
+    }
+
+    @Test
     private void commit() {
         commit1();
         commit2();
@@ -316,82 +378,107 @@ public class GitTest {
     @Test
     private void commit1() {
         assertDoesNotThrow(
-                () -> new Commit().execute(Arrays.asList(
+                () -> Main.execute(new String[]{
+                        "commit",
                         COMMIT1_MESSAGE,
-                        BOOKS_TXT.toString()
-                ))
+                        BOOKS_TXT.toString()}
+                )
         );
     }
 
     @Test
     private void commit2() {
         assertDoesNotThrow(
-                () -> new Commit().execute(Arrays.asList(
+                () -> Main.execute(new String[]{
+                        "commit",
                         COMMIT2_MESSAGE,
-                        LETTERS_TXT.toString()
-                ))
+                        LETTERS_TXT.toString()}
+                )
         );
     }
 
     @Test
     private void commit3() {
         assertDoesNotThrow(
-                () -> new Commit().execute(Arrays.asList(
+                () -> Main.execute(new String[]{
+                        "commit",
                         COMMIT3_MESSAGE,
-                        NUMBERS_TXT.toString(), WORD_TXT.toString()
-                ))
+                        NUMBERS_TXT.toString(), WORD_TXT.toString()}
+                )
         );
     }
 
     @Test
     private void commit4() {
         assertDoesNotThrow(
-                () -> new Commit().execute(Arrays.asList(
-                        COMMIT5_MESSAGE,
-                        WORDS_TXT.toString()
-                ))
+                () -> {
+                    Files.write(WORDS_TXT, Collections.singletonList(WORDS_CONTENTS));
+                    Main.execute(new String[]{
+                            "commit",
+                            COMMIT5_MESSAGE,
+                            WORDS_TXT.toString()}
+                    );
+                }
         );
     }
 
     @Test
     private void branch1() {
         assertDoesNotThrow(
-                () -> new Branch().execute(Collections.singletonList(BRANCH1_NAME))
+                () -> Main.execute(new String[]{
+                        "branch",
+                        BRANCH1_NAME}
+                )
         );
     }
 
     @Test
     private void branch2() {
         assertDoesNotThrow(
-                () -> new Branch().execute(Collections.singletonList(BRANCH2_NAME))
+                () -> Main.execute(new String[]{
+                        "branch",
+                        BRANCH2_NAME}
+                )
         );
     }
 
     @Test
     private void checkoutBranch1() {
         assertDoesNotThrow(
-                () -> new Checkout().execute(Collections.singletonList(BRANCH1_NAME))
+                () -> Main.execute(new String[]{
+                        "checkout",
+                        BRANCH1_NAME}
+                )
         );
     }
 
     @Test
     private void checkoutBranch2() {
         assertDoesNotThrow(
-                () -> new Checkout().execute(Collections.singletonList(BRANCH2_NAME))
+                () -> Main.execute(new String[]{
+                        "checkout",
+                        BRANCH2_NAME}
+                )
         );
     }
 
     @Test
     private void checkoutMaster() {
         assertDoesNotThrow(
-                () -> new Checkout().execute(Collections.singletonList(MASTER_BRANCH_NAME))
+                () -> Main.execute(new String[]{
+                        "checkout",
+                        MASTER_BRANCH_NAME}
+                )
         );
     }
 
     @Test
     private void mergeBranch1() {
         assertDoesNotThrow(
-                () -> new Merge().execute(Collections.singletonList(BRANCH1_NAME))
+                () -> Main.execute(new String[]{
+                        "merge",
+                        BRANCH1_NAME}
+                )
         );
     }
 
@@ -410,10 +497,11 @@ public class GitTest {
         assertDoesNotThrow(
                 () -> {
                     Files.write(WORD_TXT, Collections.singletonList(NEW_WORD_CONTENTS));
-                    new Commit().execute(Arrays.asList(
+                    Main.execute(new String[]{
+                            "commit",
                             COMMIT4_MESSAGE,
-                            WORD_TXT.toString()
-                    ));
+                            WORD_TXT.toString()}
+                    );
                 }
         );
     }
@@ -423,10 +511,11 @@ public class GitTest {
         assertDoesNotThrow(
                 () -> {
                     Files.write(WORD_TXT, Collections.singletonList(NEW_WORD_CONTENTS + "!!!"));
-                    new Commit().execute(Arrays.asList(
-                            COMMIT4_MESSAGE,
-                            WORD_TXT.toString()
-                    ));
+                    Main.execute(new String[]{
+                            "commit",
+                            COMMIT4_MESSAGE + "!!!",
+                            WORD_TXT.toString()}
+                    );
                 }
         );
     }

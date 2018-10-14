@@ -42,13 +42,6 @@ public class Merge extends GitCommand {
             throw new GitCommandException(String.format("Branch not found: %s", branch));
         }
 
-        StatusChecker checker = new StatusChecker();
-        final Map<FileStatus, List<String>> actualFileStates = checker.getActualFileStates();
-        if (actualFileStates.containsKey(FileStatus.STAGED)
-                || actualFileStates.containsKey(FileStatus.MODIFIED)
-                || actualFileStates.containsKey(FileStatus.DELETED)) {
-            return "You have uncommitted changes; please commit them";
-        }
         final List<Commit> commitsOfBranch = RepositoryManager.getCommitsUptoRevision(branch, CheckoutKind.BRANCH);
         final List<String> revisionsOfBranch = commitsOfBranch.stream().map(Commit::getHash).collect(Collectors.toList());
         final Commit commitOfHead = Commit.ofHead();

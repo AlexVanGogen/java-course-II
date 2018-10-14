@@ -12,6 +12,10 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
+        execute(args);
+    }
+
+    public static void execute(String[] args) {
         if (args.length == 0) {
             System.out.println("Command not specified");
             return;

@@ -41,7 +41,8 @@ public final class BlobNode extends Node {
 
     @Override
     public void write(boolean saveBlob) throws IOException {
-        Path file = Files.createFile(Paths.get(root.getRootDirectory().toString()).resolve(blob.getObjectQualifiedPath()));
+        final Path path = Paths.get(root.getRootDirectory().toString()).resolve(blob.getObjectQualifiedPath());
+        Path file = Files.notExists(path) ? Files.createFile(path) : path;
         JSONObject blobInfo = new JSONObject();
         blobInfo.put("type", "blob");
         blobInfo.put("hash", blob.getSha1());
