@@ -16,6 +16,7 @@ public class Commit extends GitCommand {
         if (args.size() < 1) {
             throw new GitCommandException();
         }
+        super.execute(args);
         try {
             if (args.size() == 1) {
                 Stage stage = Stage.getStage();

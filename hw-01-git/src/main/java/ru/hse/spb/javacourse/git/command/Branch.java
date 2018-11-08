@@ -23,6 +23,7 @@ public class Branch extends GitCommand {
         if (args.size() == 1) {
             return executeNewBranch(args.get(0));
         } else {
+            super.execute(args);
             if (!args.get(0).equals("remove")) {
                 return "Unknown command: " + args.get(0);
             }

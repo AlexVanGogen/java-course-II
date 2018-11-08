@@ -10,7 +10,6 @@ import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.BufferUnderflowException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

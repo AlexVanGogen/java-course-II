@@ -3,7 +3,6 @@ package ru.hse.spb.javacourse.git.command;
 import org.jetbrains.annotations.NotNull;
 import ru.hse.spb.javacourse.git.entities.*;
 import ru.hse.spb.javacourse.git.entities.Commit;
-import ru.hse.spb.javacourse.git.filestatus.FileStatus;
 import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
@@ -13,9 +12,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ru.hse.spb.javacourse.git.entities.RepositoryManager.GIT_TREES_PATH;
-import static ru.hse.spb.javacourse.git.entities.RepositoryManager.HEAD_REF_NAME;
-import static ru.hse.spb.javacourse.git.entities.RepositoryManager.currentBranch;
+import static ru.hse.spb.javacourse.git.entities.RepositoryManager.*;
 
 public class Merge extends GitCommand {
 
@@ -29,6 +26,9 @@ public class Merge extends GitCommand {
     public String execute(List<String> args) throws IOException, GitCommandException {
         if (args.size() != 1) {
             throw new GitCommandException();
+        }
+        if (args.get(0).equals("--continue")) {
+            return continueMerge();
         }
         String branchToMerge = args.get(0);
         return merge(branchToMerge);
@@ -99,9 +99,7 @@ public class Merge extends GitCommand {
         List<Blob> filesChangedOnlyInMergingBranch = new ArrayList<>();
 
         for (Blob fileCommittedInCurrentBranch : filesCommittedInCurrentBranch) {
-
             for (Blob fileCommittedInMergingBranch : filesCommittedInMergingBranch) {
-
                 if (fileCommittedInCurrentBranch.getObjectQualifiedPath().equals(fileCommittedInMergingBranch.getObjectQualifiedPath())) {
                     if (!fileCommittedInCurrentBranch.getEncodedContents().equals(fileCommittedInMergingBranch.getEncodedContents())) {
                         filesWithConflicts.add(fileCommittedInCurrentBranch.getObjectQualifiedPath());
@@ -113,20 +111,14 @@ public class Merge extends GitCommand {
                         );
                     }
                 }
-
             }
-
         }
+
         for (Blob fileCommittedInMergingBranch : filesCommittedInMergingBranch) {
             if (!filesCommittedInCurrentBranch.contains(fileCommittedInMergingBranch)) {
                 filesChangedOnlyInMergingBranch.add(fileCommittedInMergingBranch);
             }
         }
-        // NPE is impossible here, because existence of given branch was checked
-        // in the beginning of `merge` method.
-        refList.update(currentBranch, refList.getRevisionForRef(mergingBranch));
-        refList.update(HEAD_REF_NAME, currentBranch);
-        refList.write();
 
         List<String> filesToAdd = new ArrayList<>();
         if (!filesChangedOnlyInMergingBranch.isEmpty()) {
@@ -140,21 +132,50 @@ public class Merge extends GitCommand {
         filesToAdd.forEach(stage::addNewFile);
 
         if (!filesWithConflicts.isEmpty()) {
+            saveInfoAboutFilesWithConflicts(filesWithConflicts);
             StringJoiner answerBuilder = new StringJoiner("\n");
             answerBuilder.add("There are conflicts in the following files:");
             filesWithConflicts.forEach(p -> answerBuilder.add('\t' + p.toString()));
-            answerBuilder.add("Following files have no conflicts, they added to staging index:");
-            filesToAdd.forEach(f -> answerBuilder.add('\t' + f));
+            if (!filesToAdd.isEmpty()) {
+                answerBuilder.add("Following files have no conflicts, they added to staging index:");
+                filesToAdd.forEach(f -> answerBuilder.add('\t' + f));
+            }
+            MergingState.write(mergingBranch);
+            answerBuilder.add("Resolve conflicts manually and use \"./jgit.sh merge --continue\" to proceed");
             return answerBuilder.toString();
         } else {
             try {
-                stage.commitStage("Merge branch " + mergingBranch);
+                stage.commitStage("Merge branch " + mergingBranch + " with " + currentBranch);
                 StatusChecker checker = new StatusChecker();
                 checker.getActualFileStates();
                 stage.resetStage();
             } catch (NothingToCommitException ignored) {}
             return "Merge done";
         }
+    }
+
+    @NotNull
+    private String continueMerge() throws IOException {
+        final String mergingBranch = MergingState.getMergingBranchOrNull();
+        if (mergingBranch == null) {
+            throw new RepositoryNotInMergingStateException();
+        }
+        final List<String> filesWithConflicts = getInfoAboutFilesWithConflicts();
+        System.out.println(filesWithConflicts);
+        System.out.println(new Add().execute(filesWithConflicts));
+        System.out.println(new ru.hse.spb.javacourse.git.command.Commit().execute(Collections.singletonList("Merge branch " + mergingBranch + " with " + currentBranch)));
+        final String revisionOfCurrentBranch = refList.getRevisionForRef(currentBranch);
+        if (revisionOfCurrentBranch == null) {
+            throw new RevisionNotFoundException("Revision for ref " + currentBranch + " not found");
+        }
+        refList.update(HEAD_REF_NAME, currentBranch);
+        final String revisionOfHead = Commit.ofHead().getHash();
+        refList.update(currentBranch, revisionOfHead);
+        refList.update(mergingBranch, revisionOfHead);
+        refList.write();
+        MergingState.clear();
+        clearInfoAboutFilesWithConflicts();
+        return "Merge done";
     }
 
     private Set<Blob> getFilesCommittedBetween(@NotNull Commit ancestor, @NotNull Commit commit) throws IOException {
@@ -181,5 +202,18 @@ public class Merge extends GitCommand {
     ) throws IOException {
         String result = "<<<<<<< HEAD\n" + file1Contents + "\n=======\n" + file2Contents + "\n>>>>>>> " + branchName;
         Files.write(pathToFile, Collections.singletonList(result));
+    }
+
+    private void saveInfoAboutFilesWithConflicts(@NotNull List<Path> pathsToFiles) throws IOException {
+        Files.write(GIT_FILES_WITH_CONFLICTS_PATH, pathsToFiles.stream().map(Path::toString).collect(Collectors.toList()));
+    }
+
+    @NotNull
+    private List<String> getInfoAboutFilesWithConflicts() throws IOException {
+        return Files.readAllLines(GIT_FILES_WITH_CONFLICTS_PATH);
+    }
+
+    private void clearInfoAboutFilesWithConflicts() throws IOException {
+        Files.write(GIT_FILES_WITH_CONFLICTS_PATH, Collections.emptyList());
     }
 }

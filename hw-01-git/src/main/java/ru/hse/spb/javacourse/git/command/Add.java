@@ -30,6 +30,7 @@ public class Add extends GitCommand {
         if (args.isEmpty()) {
             throw new GitCommandException();
         }
+        super.execute(args);
         for (String nextPath: args) {
             if (Files.notExists(Paths.get(nextPath))) {
                 answerBuilder.append("File not found: ").append(nextPath).append("\n");

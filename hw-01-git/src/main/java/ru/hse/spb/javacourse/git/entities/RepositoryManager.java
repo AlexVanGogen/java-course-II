@@ -24,6 +24,8 @@ public class RepositoryManager {
     public static final Path GIT_TREES_PATH = Paths.get(".jgit/trees/");
     public static final Path GIT_FILE_STATES_PATH = Paths.get(".jgit/states");
     public static final Path GIT_STAGE_PATH = Paths.get(".jgit/stage");
+    public static final Path GIT_MERGING_BRANCH_PATH = Paths.get(".jgit/merge");
+    public static final Path GIT_FILES_WITH_CONFLICTS_PATH = Paths.get(".jgit/conflicts");
 
     private static Index index;
 
@@ -44,6 +46,8 @@ public class RepositoryManager {
         Files.write(GIT_FILE_STATES_PATH, Collections.singletonList(new JSONArray().toString()));
         Files.createFile(GIT_STAGE_PATH);
         Files.write(GIT_STAGE_PATH, Collections.singletonList(new JSONArray().toString()));
+        Files.createFile(GIT_MERGING_BRANCH_PATH);
+        Files.createFile(GIT_FILES_WITH_CONFLICTS_PATH);
     }
 
     @NotNull
