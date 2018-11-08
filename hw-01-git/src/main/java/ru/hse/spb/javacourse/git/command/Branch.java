@@ -6,13 +6,11 @@ import ru.hse.spb.javacourse.git.entities.Commit;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ru.hse.spb.javacourse.git.entities.RepositoryManager.HEAD_REF_NAME;
-import static ru.hse.spb.javacourse.git.entities.RepositoryManager.commit;
 import static ru.hse.spb.javacourse.git.entities.RepositoryManager.currentBranch;
 
 public class Branch extends GitCommand {
@@ -35,7 +33,7 @@ public class Branch extends GitCommand {
     @NotNull
     private String executeNewBranch(@NotNull String branchName) throws IOException {
         RefList refList = new RefList();
-        if (refList.hasBranch(branchName)) {
+        if (refList.hasBranchWithName(branchName)) {
             return String.format("Branch with name %s already exists", branchName);
         }
         String headRevision = refList.getRevisionForRef(HEAD_REF_NAME);
@@ -61,7 +59,7 @@ public class Branch extends GitCommand {
         final Set<String> allReferencedRevisions = refList.getAllReferencedRevisions();
         final List<String> allRevisionsUsedByOtherBranches = new ArrayList<>();
         for (final String referencedRevision : allReferencedRevisions) {
-            if (!referencedRevision.equals(branchRevision)) {
+            if (referencedRevision.equals(branchRevision)) {
                 allRevisionsUsedByOtherBranches.addAll(RepositoryManager.getCommitsUptoRevision(referencedRevision, CheckoutKind.REVISION)
                         .stream()
                         .map(Commit::getHash)

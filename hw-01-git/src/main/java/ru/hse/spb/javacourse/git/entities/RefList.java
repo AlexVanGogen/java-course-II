@@ -56,7 +56,7 @@ public class RefList {
         return refsToRevision;
     }
 
-    public boolean hasBranch(@NotNull String branch) {
+    public boolean hasBranchWithName(@NotNull String branch) {
         return getRevisionForRef(branch) != null;
     }
 
@@ -93,7 +93,11 @@ public class RefList {
 
     @Nullable
     public String getRevisionReferencedFromHead() {
-        return headRef == null ? null : getRevisionForRef(headRef);
+        if (headRef == null) {
+            return null;
+        }
+        final String revisionOfHead = getRevisionForRef(headRef);
+        return revisionOfHead != null ? revisionOfHead : headRef;
     }
 
     public void write() throws IOException {

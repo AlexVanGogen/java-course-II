@@ -2,8 +2,6 @@ package ru.hse.spb.javacourse.git.entities;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
-import ru.hse.spb.javacourse.git.command.Checkout;
-import ru.hse.spb.javacourse.git.filestatus.StatusChecker;
 import ru.hse.spb.javacourse.git.filestree.CommitFilesTree;
 
 import java.io.IOException;
@@ -70,7 +68,7 @@ public class RepositoryManager {
     public static List<String> showLog() throws IOException {
         List<String> log = new ArrayList<>();
         RefList refList = new RefList();
-        getCommitsUptoRevision(HEAD_REF_NAME, CheckoutKind.BRANCH).forEach(commit -> {
+        getCommitsUptoRevision(HEAD_REF_NAME, CheckoutKind.REVISION).forEach(commit -> {
             log.add(withRefs(commit.log(), commit.getHash(), refList));
         });
         return log;
@@ -102,19 +100,29 @@ public class RepositoryManager {
         List<Commit> commits = new ArrayList<>();
         Commit currentCommit;
         if (kind == CheckoutKind.BRANCH) {
-            final String revisionForRef = refList.getRevisionForRef(revisionOrPointer);
-            if (revisionForRef == null) {
-                throw new RevisionNotFoundException();
+            if (!revisionOrPointer.equals(HEAD_REF_NAME)) {
+                final String revisionForRef = refList.getRevisionForRef(revisionOrPointer);
+                if (revisionForRef == null) {
+                    throw new RevisionNotFoundException();
+                }
+                currentCommit = Commit.ofRevision(revisionForRef);
+            } else {
+                currentCommit = Commit.ofHead();
             }
-            currentCommit = Commit.ofRevision(revisionForRef);
         } else {
-            currentCommit = Commit.ofRevision(revisionOrPointer);
+            if (revisionOrPointer.equals(HEAD_REF_NAME)) {
+                currentCommit = Commit.ofHead();
+            } else {
+                currentCommit = Commit.ofRevision(revisionOrPointer);
+            }
         }
-        while (currentCommit.hasParents()) {
+        if (currentCommit != null) {
+            while (currentCommit.hasParents()) {
+                commits.add(currentCommit);
+                currentCommit = Commit.ofRevision(currentCommit.getParentHash(0));
+            }
             commits.add(currentCommit);
-            currentCommit = Commit.ofRevision(currentCommit.getParentHash(0));
         }
-        commits.add(currentCommit);
         return commits;
     }
 
@@ -138,7 +146,7 @@ public class RepositoryManager {
         RefList refList = new RefList();
         CheckoutKind kind;
         if (isRevisionNotExists(revisionOrPointer)) {
-            if (!refList.hasBranch(revisionOrPointer)) {
+            if (!refList.hasBranchWithName(revisionOrPointer)) {
                 throw new RevisionNotFoundException(revisionOrPointer);
             }
             kind = CheckoutKind.BRANCH;
