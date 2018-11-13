@@ -1,0 +1,19 @@
+plugins {
+    id 'java'
+}
+
+group 'ru.hse.spb.javacourse'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.json', name: 'json', version: '20180813'
+    compile 'org.jetbrains:annotations:16.0.2'
+    compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.3.1'
+}
