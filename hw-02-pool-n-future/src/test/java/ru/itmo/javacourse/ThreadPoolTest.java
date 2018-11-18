@@ -15,9 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ThreadPoolTest {
 
@@ -321,6 +319,14 @@ public class ThreadPoolTest {
                 results);
 
         assertEquals(51, executionExceptions.size());
+    }
+
+    @Test
+    void testNullReturn() throws LightExecutionException {
+        threadPool = new ThreadPoolImpl(8);
+        final Supplier<String> task = () -> null;
+        final LightFuture<String> future = submitTaskWithInitialDelay(task, 10);
+        assertNull(future.get());
     }
 
     private void sleep(long milliseconds) {

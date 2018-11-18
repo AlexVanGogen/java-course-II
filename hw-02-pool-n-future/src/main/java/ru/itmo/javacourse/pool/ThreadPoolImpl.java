@@ -159,7 +159,7 @@ public class ThreadPoolImpl implements Pool {
          */
         @NotNull
         @Override
-        public synchronized <R> LightFuture<R> thenApply(Function<? super T, ? extends R> functionToApply) {
+        public synchronized <R> LightFuture<R> thenApply(@NotNull Function<? super T, ? extends R> functionToApply) {
             final Supplier<R> nextTaskSupplier = () -> {
                 try {
                     return functionToApply.apply(get());

@@ -28,7 +28,7 @@ public interface LightFuture<T> {
      * @return new task where given function is applied to the result of current task
      */
     @NotNull
-    <R> LightFuture<R> thenApply(Function<? super T, ? extends R> functionToApply);
+    <R> LightFuture<R> thenApply(@NotNull Function<? super T, ? extends R> functionToApply);
 
     /**
      * @return true if given task is done
