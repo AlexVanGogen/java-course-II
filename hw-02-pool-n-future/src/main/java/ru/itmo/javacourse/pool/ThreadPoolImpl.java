@@ -109,8 +109,7 @@ public class ThreadPoolImpl implements Pool {
 
         @NotNull private final Supplier<? extends T> taskSupplier;
 
-        @Nullable
-        private T taskResult;
+        @Nullable private T taskResult;
 
         @Nullable private Throwable taskExecutionException;
 
