@@ -1,0 +1,17 @@
+plugins {
+    id 'java'
+}
+
+group 'ru.itmo.javacourse'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.jetbrains', name: 'annotations', version: '16.0.3'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.3.1'
+}
