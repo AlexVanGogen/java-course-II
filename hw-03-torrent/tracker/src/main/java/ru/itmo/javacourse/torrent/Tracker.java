@@ -1,6 +1,5 @@
 package ru.itmo.javacourse.torrent;
 
-import com.sun.tools.corba.se.idl.constExpr.Not;
 import org.jetbrains.annotations.NotNull;
 import ru.itmo.javacourse.torrent.interaction.DistributorDescription;
 import ru.itmo.javacourse.torrent.interaction.IpAddress;
@@ -8,6 +7,7 @@ import ru.itmo.javacourse.torrent.interaction.Notifier;
 import ru.itmo.javacourse.torrent.interaction.Response;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.DistributedFilesMetadata;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.JsonTrackerMetadataReader;
+import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.JsonTrackerMetadataWriter;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.TrackerMetadataReader;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.TrackerRequest;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.list.ListRequest;
@@ -20,10 +20,7 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadReque
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadResponse;
 import ru.itmo.javacourse.torrent.interaction.protocol.RequestProvider;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -34,10 +31,12 @@ import java.util.stream.Collectors;
 
 import static ru.itmo.javacourse.torrent.interaction.Configuration.*;
 
-public class Tracker {
+public class Tracker implements AutoCloseable {
 
     @NotNull private final DistributedFilesMetadata distributedFilesMetadata;
     @NotNull private final ServerSocket server;
+    @NotNull private final Thread mainWorker;
+    @NotNull private final Thread distributorsRemover;
 
     public Tracker() throws IOException {
         final TrackerMetadataReader metadataReader = new JsonTrackerMetadataReader();
@@ -49,16 +48,20 @@ public class Tracker {
         }
         distributedFilesMetadata = metadataReader.readDistributedFilesMetadata(new FileReader(pathToMetadataFile.toString()));
         server = new ServerSocket(TRACKER_PORT);
+
+        mainWorker = new Thread(new TrackerWorker());
+        distributorsRemover = new Thread(new DistributorsRemover());
     }
 
     public void launch() {
-        new Thread(new TrackerWorker()).start();
+        mainWorker.start();
+        distributorsRemover.start();
     }
 
     private class TrackerWorker implements Runnable {
         @Override
         public void run() {
-            System.out.println("Tracker started at port " + TRACKER_PORT);
+            Notifier.createTrackerMessage("Tracker started at port " + TRACKER_PORT);
             while (true) {
                 try (
                         Socket client = server.accept();
@@ -84,6 +87,19 @@ public class Tracker {
         }
     }
 
+    private class DistributorsRemover implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                distributedFilesMetadata.removeOutdatedDistributors();
+                try {
+                    Thread.sleep(TRACKER_CHECK_OUTDATED_PERIOD_MILLIS);
+                } catch (InterruptedException ignored) { }
+            }
+        }
+    }
+
     @NotNull
     public UpdateResponse executeUpdate(@NotNull UpdateRequest request, @NotNull Socket client) {
         final IpAddress clientIp = new IpAddress(client.getLocalAddress().getAddress());
@@ -94,7 +110,7 @@ public class Tracker {
         }
         final DistributorDescription description = new DistributorDescription(clientIp, clientPort);
         for (int fileId: request.getDistributedFilesIdentifiers()) {
-            distributedFilesMetadata.addDistributor(fileId, description);
+            distributedFilesMetadata.addOrUpdateDistributor(fileId, description);
         }
         return new UpdateResponse(true);
     }
@@ -125,5 +141,13 @@ public class Tracker {
                 distributors.size(),
                 distributors
         );
+    }
+
+    @Override
+    public void close() throws Exception {
+        mainWorker.join();
+        distributorsRemover.join();
+        server.close();
+        distributedFilesMetadata.write(new JsonTrackerMetadataWriter(), new FileWriter(DISTRIBUTED_FILES_METADATA_FILENAME));
     }
 }

@@ -4,10 +4,10 @@ import org.jetbrains.annotations.NotNull;
 import ru.itmo.javacourse.torrent.interaction.DistributedFileDescription;
 import ru.itmo.javacourse.torrent.interaction.DistributorDescription;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.*;
 
 /**
  * Tracker metadata that consists of distributed files IDs and, for each file,
@@ -54,8 +54,16 @@ public class DistributedFilesMetadata {
         }
     }
 
-    public void addDistributor(int fileId, @NotNull DistributorDescription description) {
-        filesIdsAndDescriptions.get(fileId).addDistributor(description);
+    public void addOrUpdateDistributor(int fileId, @NotNull DistributorDescription description) {
+        filesIdsAndDescriptions.get(fileId).addOrUpdateDistributor(description);
+    }
+
+    public void removeOutdatedDistributors() {
+        filesIdsAndDescriptions.forEach((ignored, fileMeta) -> fileMeta.removeOutdatedDistributors());
+    }
+
+    public void write(@NotNull TrackerMetadataWriter writer, @NotNull FileWriter output) throws IOException {
+        writer.writeDistributedFilesMetadata(this, output);
     }
 
     public static class FileMeta {
@@ -99,8 +107,18 @@ public class DistributedFilesMetadata {
             return new DistributedFileDescription(fileId, fileName, fileSize);
         }
 
-        public void addDistributor(@NotNull DistributorDescription distributor) {
+        public void addOrUpdateDistributor(@NotNull DistributorDescription distributor) {
+            distributor.setLastUpdateTime(LocalDateTime.now());
+            for (DistributorDescription nextDistributor : distributors) {
+                if (Arrays.equals(nextDistributor.getAddress().getBytes(), distributor.getAddress().getBytes()) && nextDistributor.getPort() == distributor.getPort()) {
+                    return;
+                }
+            }
             distributors.add(distributor);
+        }
+
+        public void removeOutdatedDistributors() {
+            distributors.removeIf(DistributorDescription::isExpired);
         }
     }
 }

@@ -18,4 +18,6 @@ public class Configuration {
 
     public static final long CLIENT_UPDATE_INITIAL_DELAY_SECS = 300;
     public static final long CLIENT_UPDATE_PERIOD_SECS = 300;
+    public static final long TRACKER_AWAIT_UPDATE_TIMEOUT_SECS = 300;
+    public static final long TRACKER_CHECK_OUTDATED_PERIOD_MILLIS = 1000;
 }

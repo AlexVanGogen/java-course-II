@@ -42,12 +42,13 @@ public class Client {
         manager = new DistributedFilesManager(filesToUpload);
         downloadExecutor = Executors.newFixedThreadPool(4);
         downloader = new FileDownloader(this, manager, downloadExecutor);
+        this.port = port;
+
         for (File file : filesToUpload) {
             executeUpload(file.getName(), file.length());
         }
         executeUpdate(new ArrayList<>(manager.getDistributedFilesIds()));
 
-        this.port = port;
         seeder = new Seeder(port, manager);
         seeder.launch();
 
