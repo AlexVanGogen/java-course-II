@@ -61,7 +61,7 @@ public class JsonTrackerMetadataReader implements TrackerMetadataReader {
     }
 
     @NotNull
-    private IpAddress readIpAddress(@NotNull final JSONArray ipData) {
+    private IpAddress readIpAddress(@NotNull final JSONArray ipData) throws IOException {
         final byte[] ip = new byte[4];
         for (int i = 0; i < 4; i++) {
             ip[i] = (byte) ipData.getInt(i);
