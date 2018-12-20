@@ -46,7 +46,6 @@ public class FragmentedFile {
             fullFile.read(data);
             final FileFragment fragment = new FileFragment(i, DEFAULT_FRAGMENT_SIZE_BYTES);
             availableFragments.put(i, fragment);
-//            fragment.savePart();
         }
 
         int lastFragmentSize = (int) fileSize - fragmentsNum * DEFAULT_FRAGMENT_SIZE_BYTES;
@@ -56,7 +55,6 @@ public class FragmentedFile {
             fullFile.read(data);
             final FileFragment fragment = new FileFragment(fragmentsNum, lastFragmentSize);
             availableFragments.put(fragmentsNum, fragment);
-//            fragment.savePart();
         } else {
             numberOfFragments = fragmentsNum;
         }

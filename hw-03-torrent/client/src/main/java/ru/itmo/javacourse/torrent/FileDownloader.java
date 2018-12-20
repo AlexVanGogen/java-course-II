@@ -10,8 +10,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class FileDownloader {
 
@@ -37,6 +37,8 @@ public class FileDownloader {
     private class DownloadFileTask implements Runnable {
 
         @NotNull private final FragmentedFile fileToDownload;
+        @NotNull private final List<Future<?>> downloadedFragmentsFutures = new ArrayList<>();
+        @NotNull private final CompletableFuture<?> downloadedFileFuture = new CompletableFuture<>();
 
         public DownloadFileTask(@NotNull FragmentedFile fileToDownload) {
             this.fileToDownload = fileToDownload;
@@ -56,28 +58,54 @@ public class FileDownloader {
 
                     final DistributorDescription selectedDistributor = selectDistributor(fileDistributors);
                     final Collection<Integer> fragmentsIdsToDownload = client.executeStat(fileToDownload.getFileId(), selectedDistributor.getAddress().toString(), (short) selectedDistributor.getPort());
-                    for (int fragmentId : fragmentsIdsToDownload) {
-                        // TODO allow to download fragments in parallel?
-                        if (!fileToDownload.hasFragment(fragmentId)) {
-                            downloadFragment(selectedDistributor, fragmentId);
-                        }
-                    }
+                    downloadExecutor.invokeAll(
+                            fragmentsIdsToDownload.stream()
+                                    .filter(id -> !fileToDownload.hasFragment(id))
+                                    .map(id -> new DownloadFragmentTask(fileToDownload, selectedDistributor, id))
+                                    .collect(Collectors.toList())
+                    );
                 }
+
                 final String pathToNewFile = fileToDownload.unionAllFragmentsToNewFile();
 
                 Notifier.createClientMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile));
             } catch (IOException e) {
                 Notifier.createClientMessage(String.format("File %s has not downloaded due to I/O error", fileToDownload.getFileName()));
+            } catch (InterruptedException e) {
+                Notifier.createClientMessage(String.format("File %s has not downloaded due to ExecutorService error", fileToDownload.getFileName()));
             }
+        }
+
+        private DistributorDescription selectDistributor(@NotNull List<DistributorDescription> distributors) {
+            return distributors.get(0);
+        }
+    }
+
+    private class DownloadFragmentTask implements Callable<Object> {
+
+        @NotNull private final FragmentedFile fileToDownload;
+        @NotNull private final DistributorDescription selectedDistributor;
+        private final int fragmentId;
+
+        public DownloadFragmentTask(@NotNull FragmentedFile fileToDownload, @NotNull DistributorDescription selectedDistributor, int fragmentId) {
+            this.fileToDownload = fileToDownload;
+            this.selectedDistributor = selectedDistributor;
+            this.fragmentId = fragmentId;
+        }
+
+        @Override
+        public Object call() {
+            try {
+                downloadFragment(selectedDistributor, fragmentId);
+            } catch (IOException e) {
+                Notifier.createClientMessage(String.format("Fragment %d of file %s has not downloaded due to I/O error", fragmentId, fileToDownload.getFileName()));
+            }
+            return null;
         }
 
         private void downloadFragment(@NotNull DistributorDescription distributor, int fragmentId) throws IOException {
             final byte[] content = client.executeGet(fileToDownload.getFileId(), fragmentId, distributor.getAddress().toString(), distributor.getPort());
             fileToDownload.downloadFragment(fragmentId, content);
-        }
-
-        private DistributorDescription selectDistributor(@NotNull List<DistributorDescription> distributors) {
-            return distributors.get(0);
         }
     }
 }

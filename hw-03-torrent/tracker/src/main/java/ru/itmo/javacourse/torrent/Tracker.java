@@ -21,6 +21,7 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadRespo
 import ru.itmo.javacourse.torrent.interaction.protocol.RequestProvider;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -102,7 +103,7 @@ public class Tracker implements AutoCloseable {
 
     @NotNull
     public UpdateResponse executeUpdate(@NotNull UpdateRequest request, @NotNull Socket client) {
-        final IpAddress clientIp = new IpAddress(client.getLocalAddress().getAddress());
+        final IpAddress clientIp = new IpAddress(((InetSocketAddress)client.getRemoteSocketAddress()).getAddress().getAddress());
         final short clientPort = request.getClientPort();
         final int numberOfUploadedFilesToUpdate = (int) request.getDistributedFilesIdentifiers().stream().filter(id -> distributedFilesMetadata.getFilesIdsAndDescriptions().containsKey(id)).count();
         if (numberOfUploadedFilesToUpdate != request.getDistributedFilesCount()) {
