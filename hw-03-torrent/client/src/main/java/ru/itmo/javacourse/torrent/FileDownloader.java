@@ -6,10 +6,7 @@ import ru.itmo.javacourse.torrent.interaction.Notifier;
 import ru.itmo.javacourse.torrent.interaction.filesystem.client.FragmentedFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -64,6 +61,9 @@ public class FileDownloader {
                                     .map(id -> new DownloadFragmentTask(fileToDownload, selectedDistributor, id))
                                     .collect(Collectors.toList())
                     );
+                    if (!fileToDownload.getAvailableFragments().isEmpty()) {
+                        client.executeUpdate(Collections.singletonList(fileToDownload.getFileId()));
+                    }
                 }
 
                 final String pathToNewFile = fileToDownload.unionAllFragmentsToNewFile();
