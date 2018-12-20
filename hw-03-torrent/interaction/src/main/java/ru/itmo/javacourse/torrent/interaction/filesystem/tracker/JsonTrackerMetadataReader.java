@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import ru.itmo.javacourse.torrent.interaction.DistributorDescription;
 import ru.itmo.javacourse.torrent.interaction.IpAddress;
+import ru.itmo.javacourse.torrent.interaction.Notifier;
 
 import java.io.FileReader;
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class JsonTrackerMetadataReader implements TrackerMetadataReader {
                 filesIdsAndDescriptions.put(fileMeta.getFileId(), fileMeta);
             }
         } catch (JSONException e) {
-            System.out.println("Problems with JSON reading (probably file has inappropriate format)");
+            Notifier.createTrackerMessage("Stored json metadata is empty or corrupted; nothing to restore");
         }
 
         return new DistributedFilesMetadata(filesIdsAndDescriptions);
