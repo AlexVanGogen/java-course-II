@@ -5,9 +5,9 @@ import org.jetbrains.annotations.NotNull;
 public class DistributorDescription {
 
     @NotNull private final IpAddress address;
-    private final int port;
+    private final short port;
 
-    public DistributorDescription(@NotNull IpAddress address, int port) {
+    public DistributorDescription(@NotNull IpAddress address, short port) {
         this.address = address;
         this.port = port;
     }
@@ -17,7 +17,7 @@ public class DistributorDescription {
         return address;
     }
 
-    public int getPort() {
+    public short getPort() {
         return port;
     }
 }

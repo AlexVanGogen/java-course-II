@@ -13,11 +13,11 @@ public class UpdateRequest implements TrackerRequest {
     public static final byte ID = 4;
     public static final int REFRESH_TIME_SECS = 300;
 
-    private final int clientPort;
+    private final short clientPort;
     private final int distributedFilesCount;
     @NotNull private final Collection<Integer> distributedFilesIdentifiers;
 
-    public UpdateRequest(int clientPort, int distributedFilesCount, @NotNull Collection<Integer> distributedFilesIdentifiers) {
+    public UpdateRequest(short clientPort, int distributedFilesCount, @NotNull Collection<Integer> distributedFilesIdentifiers) {
         this.clientPort = clientPort;
         this.distributedFilesCount = distributedFilesCount;
         this.distributedFilesIdentifiers = distributedFilesIdentifiers;
@@ -44,7 +44,7 @@ public class UpdateRequest implements TrackerRequest {
         return new UpdateRequest(clientPort, distributedFilesCount, distributedFilesIdentifiers);
     }
 
-    public int getClientPort() {
+    public short getClientPort() {
         return clientPort;
     }
 

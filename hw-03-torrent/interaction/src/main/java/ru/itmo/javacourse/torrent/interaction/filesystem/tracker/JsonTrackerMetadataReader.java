@@ -55,7 +55,7 @@ public class JsonTrackerMetadataReader implements TrackerMetadataReader {
     private DistributorDescription readDistributorDescription(@NotNull final JSONObject distributorData) throws IOException {
         final JSONArray ipData = distributorData.getJSONArray("ip");
         final IpAddress address = readIpAddress(ipData);
-        final int port = distributorData.getInt("port");
+        final short port = (short) distributorData.getInt("port");
         return new DistributorDescription(address, port);
     }
 

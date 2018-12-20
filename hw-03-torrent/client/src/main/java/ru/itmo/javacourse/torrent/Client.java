@@ -16,6 +16,7 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateReque
 import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateResponse;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadRequest;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadResponse;
+import ru.itmo.javacourse.torrent.interaction.protocol.ProtocolImpl;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -42,9 +43,9 @@ public class Client {
     @NotNull private final ExecutorService downloadExecutor;
     @NotNull private final Seeder seeder;
 
-    private final int port;
+    private final short port;
 
-    public Client(int port, @NotNull Collection<File> filesToUpload) throws IOException {
+    public Client(short port, @NotNull Collection<File> filesToUpload) throws IOException {
         manager = new DistributedFilesManager(filesToUpload);
         downloadExecutor = Executors.newFixedThreadPool(4);
         downloader = new FileDownloader(this, manager, downloadExecutor);
@@ -56,66 +57,41 @@ public class Client {
         seeder.launch();
     }
 
-    // TODO sooooo many copypaste, wtf i created protocol interfaces
     @NotNull
     public Collection<DistributedFileDescription> executeList() throws IOException {
-        try (
-                Socket socket = new Socket(TRACKER_ADDRESS, TRACKER_PORT);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new ListRequest().write(output);
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForTracker());
+        protocol.sendRequest(new ListRequest());
 
-            final ListResponse response = ListResponse.read(input);
-            return response.getDistributedFileDescriptions();
-        }
+        final ListResponse response = protocol.receiveResponse(ListResponse.class);
+        return response.getDistributedFileDescriptions();
     }
 
     public int executeUpload(@NotNull String fileName, long fileSize) throws IOException {
-        try (
-                Socket socket = new Socket(TRACKER_ADDRESS, TRACKER_PORT);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new UploadRequest(
-                    fileName,
-                    fileSize
-            ).write(output);
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForTracker());
+        protocol.sendRequest(new UploadRequest(fileName, fileSize));
 
-            final UploadResponse response = UploadResponse.read(input);
-
-            final Path pathToFile = Paths.get(fileName);
-            final FragmentedFile fragmentedFile = new FragmentedFile(pathToFile.toFile(), response.getUploadedFileId());
-            manager.getMetadata().getFilesAndFragments().put(response.getUploadedFileId(), fragmentedFile);
-            return response.getUploadedFileId();
-        }
+        final UploadResponse response = protocol.receiveResponse(UploadResponse.class);
+        final Path pathToFile = Paths.get(fileName);
+        final FragmentedFile fragmentedFile = new FragmentedFile(pathToFile.toFile(), response.getUploadedFileId());
+        manager.getMetadata().getFilesAndFragments().put(response.getUploadedFileId(), fragmentedFile);
+        return response.getUploadedFileId();
     }
 
     @NotNull
     public Collection<DistributorDescription> executeSources(int fileId) throws IOException {
-        try (
-                Socket socket = new Socket(TRACKER_ADDRESS, TRACKER_PORT);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new SourcesRequest(fileId).write(output);
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForTracker());
+        protocol.sendRequest(new SourcesRequest(fileId));
 
-            final SourcesResponse response = SourcesResponse.read(input);
-            return response.getDistributorsDescriptions();
-        }
+        final SourcesResponse response = protocol.receiveResponse(SourcesResponse.class);
+        return response.getDistributorsDescriptions();
     }
 
     public boolean executeUpdate(List<Integer> availableFilesIds) throws IOException {
-        try (
-                Socket socket = new Socket(TRACKER_ADDRESS, TRACKER_PORT);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new UpdateRequest(port, availableFilesIds.size(), availableFilesIds).write(output);
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForTracker());
+        protocol.sendRequest(new UpdateRequest(port, availableFilesIds.size(), availableFilesIds));
 
-            final UpdateResponse response = UpdateResponse.read(input);
-            return response.getUpdateStatus();
-        }
+        final UpdateResponse response = protocol.receiveResponse(UpdateResponse.class);
+        return response.getUpdateStatus();
     }
 
     public void executeDownload(int fileIdToDownload) throws IOException {
@@ -129,30 +105,19 @@ public class Client {
     }
 
     @NotNull
-    public Collection<Integer> executeStat(int fileId, @NotNull String seederAddress, int seederPort) throws IOException {
-        try (
-                Socket socket = new Socket(seederAddress, seederPort);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new StatRequest(fileId).write(output);
+    public Collection<Integer> executeStat(int fileId, @NotNull String seederAddress, short seederPort) throws IOException {
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForSeeder(seederAddress, seederPort));
+        protocol.sendRequest(new StatRequest(fileId));
 
-            final StatResponse response = StatResponse.read(input);
-            return response.getAvailablePartsIds();
-        }
+        final StatResponse response = protocol.receiveResponse(StatResponse.class);
+        return response.getAvailablePartsIds();
     }
 
-    public byte[] executeGet(int fileId, int fragmentId, @NotNull String seederAddress, int seederPort) throws IOException {
-        try (
-                Socket socket = new Socket(seederAddress, seederPort);
-                DataInputStream input = new DataInputStream(socket.getInputStream());
-                DataOutputStream output = new DataOutputStream(socket.getOutputStream())
-        ) {
-            new GetRequest(fileId, fragmentId).write(output);
+    public byte[] executeGet(int fileId, int fragmentId, @NotNull String seederAddress, short seederPort) throws IOException {
+        final ProtocolImpl protocol = new ProtocolImpl(SocketProvider.getSocketForSeeder(seederAddress, seederPort));
+        protocol.sendRequest(new GetRequest(fileId, fragmentId));
 
-            final GetResponse response = GetResponse.read(input);
-            return response.getFragmentContent();
-        }
+        final GetResponse response = protocol.receiveResponse(GetResponse.class);
+        return response.getFragmentContent();
     }
-
 }

@@ -86,7 +86,7 @@ public class Tracker {
     @NotNull
     public UpdateResponse executeUpdate(@NotNull UpdateRequest request, @NotNull Socket client) {
         final IpAddress clientIp = new IpAddress(client.getLocalAddress().getAddress());
-        final int clientPort = request.getClientPort();
+        final short clientPort = request.getClientPort();
         final int numberOfUploadedFilesToUpdate = (int) request.getDistributedFilesIdentifiers().stream().filter(id -> distributedFilesMetadata.getFilesIdsAndDescriptions().containsKey(id)).count();
         if (numberOfUploadedFilesToUpdate != request.getDistributedFilesCount()) {
             return new UpdateResponse(false);
@@ -101,13 +101,6 @@ public class Tracker {
     @NotNull
     public UploadResponse executeUpload(@NotNull UploadRequest request) throws IOException {
         final int newFileId = distributedFilesMetadata.addFile(request.getFileName(), request.getFileSize());
-//        System.out.println("Tracker, upload " + distributedFilesMetadata.getDistributedFilesCount());
-
-//        Path path = Paths.get("some.json");
-//        if (Files.notExists(path)) {
-//            Files.createFile(path);
-//        }
-//        new JsonTrackerMetadataWriter().writeDistributedFilesMetadata(distributedFilesMetadata, new FileWriter(path.toFile()));
         return new UploadResponse(newFileId);
     }
 

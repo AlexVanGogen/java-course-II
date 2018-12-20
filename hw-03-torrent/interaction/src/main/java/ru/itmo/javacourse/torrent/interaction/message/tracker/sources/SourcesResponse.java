@@ -26,7 +26,7 @@ public class SourcesResponse implements TrackerResponse {
         output.writeInt(distributorsCount);
         for (@NotNull final DistributorDescription description : distributorsDescriptions) {
             description.getAddress().write(output);
-            output.writeInt(description.getPort());
+            output.writeShort(description.getPort());
         }
     }
 
@@ -35,7 +35,7 @@ public class SourcesResponse implements TrackerResponse {
         final Collection<DistributorDescription> distributorsDescriptions = new ArrayList<>();
         for (int i = 0; i < distributorsCount; i++) {
             final IpAddress address = IpAddress.get(input);
-            final int port = input.readInt();
+            final short port = input.readShort();
             distributorsDescriptions.add(new DistributorDescription(address, port));
         }
         return new SourcesResponse(distributorsCount, distributorsDescriptions);
