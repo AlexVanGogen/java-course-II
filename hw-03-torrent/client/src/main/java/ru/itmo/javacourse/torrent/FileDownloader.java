@@ -65,9 +65,9 @@ public class FileDownloader {
                 }
                 final String pathToNewFile = fileToDownload.unionAllFragmentsToNewFile();
 
-                Notifier.createMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile), System.out);
+                Notifier.createMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile));
             } catch (IOException e) {
-                Notifier.createMessage(String.format("File %s has not downloaded dur to I/O error", fileToDownload.getFileName()), System.out);
+                Notifier.createMessage(String.format("File %s has not downloaded dur to I/O error", fileToDownload.getFileName()));
             }
         }
 

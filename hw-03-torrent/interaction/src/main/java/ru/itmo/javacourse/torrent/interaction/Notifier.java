@@ -6,7 +6,9 @@ import java.io.PrintStream;
 
 public class Notifier {
 
-    public static void createMessage(@NotNull String message, @NotNull PrintStream output) {
+    private static PrintStream output = System.out;
+
+    public static void createMessage(@NotNull String message) {
         output.println(message);
     }
 }
