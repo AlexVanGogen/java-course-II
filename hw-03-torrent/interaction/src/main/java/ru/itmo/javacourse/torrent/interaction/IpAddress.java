@@ -35,6 +35,13 @@ public class IpAddress implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+        return String.format("%d.%d.%d.%d", toPositive(ip[0]), toPositive(ip[1]), toPositive(ip[2]), toPositive(ip[3]));
+    }
+
+    private int toPositive(byte value) {
+        if (value < 0) {
+            return value + 128;
+        }
+        return value;
     }
 }
