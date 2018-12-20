@@ -1,6 +1,7 @@
 package ru.itmo.javacourse.torrent.interaction.protocol;
 
 import org.jetbrains.annotations.NotNull;
+import ru.itmo.javacourse.torrent.interaction.Notifier;
 import ru.itmo.javacourse.torrent.interaction.message.RequestType;
 import ru.itmo.javacourse.torrent.interaction.message.client.ClientRequest;
 import ru.itmo.javacourse.torrent.interaction.message.client.get.GetRequest;
@@ -14,9 +15,9 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadReque
 import java.io.DataInputStream;
 import java.io.IOException;
 
-public class RequestManager {
+public class RequestProvider {
 
-    public static ClientRequest readClientRequest(@NotNull final DataInputStream input) throws IOException {
+    public static ClientRequest getClientRequest(@NotNull final DataInputStream input) throws IOException {
         final byte requestId = input.readByte();
 
         switch (requestId) {
@@ -29,7 +30,7 @@ public class RequestManager {
         }
     }
 
-    public static TrackerRequest readTrackerRequest(@NotNull final DataInputStream input) throws IOException {
+    public static TrackerRequest getTrackerRequest(@NotNull final DataInputStream input) throws IOException {
         final byte requestId = input.readByte();
 
         switch (requestId) {

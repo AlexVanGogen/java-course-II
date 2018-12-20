@@ -40,12 +40,12 @@ public class ProtocolImpl implements Protocol {
             readingMethod = responseClass.getMethod("read", DataInputStream.class);
             return responseClass.cast(readingMethod.invoke(null, input));
         } catch (NoSuchMethodException e) {
-            Notifier.createMessage("Cannot find method read in class " + responseClass.getCanonicalName());
+            Notifier.createClientMessage("Cannot find method read in class " + responseClass.getCanonicalName());
             final IOException exception = new IOException();
             exception.addSuppressed(e);
             throw exception;
         } catch (IllegalAccessException | InvocationTargetException e) {
-            Notifier.createMessage("Error when invoking method read in class " + responseClass.getCanonicalName());
+            Notifier.createClientMessage("Error when invoking method read in class " + responseClass.getCanonicalName());
             final IOException exception = new IOException();
             exception.addSuppressed(e);
             throw exception;

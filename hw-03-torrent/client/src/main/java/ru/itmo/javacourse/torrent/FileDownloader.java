@@ -55,7 +55,6 @@ public class FileDownloader {
                     }
 
                     final DistributorDescription selectedDistributor = selectDistributor(fileDistributors);
-                    // TODO get rid of cast to short
                     final Collection<Integer> fragmentsIdsToDownload = client.executeStat(fileToDownload.getFileId(), selectedDistributor.getAddress().toString(), (short) selectedDistributor.getPort());
                     for (int fragmentId : fragmentsIdsToDownload) {
                         // TODO allow to download fragments in parallel?
@@ -66,9 +65,9 @@ public class FileDownloader {
                 }
                 final String pathToNewFile = fileToDownload.unionAllFragmentsToNewFile();
 
-                Notifier.createMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile));
+                Notifier.createClientMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile));
             } catch (IOException e) {
-                Notifier.createMessage(String.format("File %s has not downloaded due to I/O error", fileToDownload.getFileName()));
+                Notifier.createClientMessage(String.format("File %s has not downloaded due to I/O error", fileToDownload.getFileName()));
             }
         }
 

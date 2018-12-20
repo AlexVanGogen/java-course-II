@@ -1,8 +1,11 @@
 package ru.itmo.javacourse.torrent;
 
+import com.sun.tools.corba.se.idl.constExpr.Not;
 import org.jetbrains.annotations.NotNull;
 import ru.itmo.javacourse.torrent.interaction.DistributorDescription;
 import ru.itmo.javacourse.torrent.interaction.IpAddress;
+import ru.itmo.javacourse.torrent.interaction.Notifier;
+import ru.itmo.javacourse.torrent.interaction.Response;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.DistributedFilesMetadata;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.JsonTrackerMetadataReader;
 import ru.itmo.javacourse.torrent.interaction.filesystem.tracker.TrackerMetadataReader;
@@ -15,7 +18,7 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateReque
 import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateResponse;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadRequest;
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadResponse;
-import ru.itmo.javacourse.torrent.interaction.protocol.RequestManager;
+import ru.itmo.javacourse.torrent.interaction.protocol.RequestProvider;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -62,22 +65,20 @@ public class Tracker {
                         DataInputStream input = new DataInputStream(client.getInputStream());
                         DataOutputStream output = new DataOutputStream(client.getOutputStream())
                 ) {
-                    TrackerRequest request = RequestManager.readTrackerRequest(input);
+                    TrackerRequest request = RequestProvider.getTrackerRequest(input);
+                    Response response;
                     if (request instanceof UploadRequest) {
-                        final UploadResponse response = executeUpload((UploadRequest) request);
-                        response.write(output);
+                        response = executeUpload((UploadRequest) request);
                     } else if (request instanceof ListRequest) {
-                        final ListResponse response = executeList((ListRequest) request);
-                        response.write(output);
+                        response = executeList((ListRequest) request);
                     } else if (request instanceof SourcesRequest) {
-                        final SourcesResponse response = executeSources((SourcesRequest) request);
-                        response.write(output);
+                        response = executeSources((SourcesRequest) request);
                     } else {
-                        final UpdateResponse response = executeUpdate((UpdateRequest) request, client);
-                        response.write(output);
+                        response = executeUpdate((UpdateRequest) request, client);
                     }
+                    response.write(output);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Notifier.createTrackerMessage("I/O error happened during tracker lifecycle");
                 }
             }
         }
