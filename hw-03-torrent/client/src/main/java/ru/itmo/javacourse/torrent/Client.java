@@ -18,11 +18,8 @@ import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadReque
 import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadResponse;
 import ru.itmo.javacourse.torrent.interaction.protocol.ProtocolImpl;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -30,18 +27,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
-import static ru.itmo.javacourse.torrent.interaction.Configuration.TRACKER_ADDRESS;
-import static ru.itmo.javacourse.torrent.interaction.Configuration.TRACKER_PORT;
-
-// TODO implement updater to make update requests every time
 public class Client {
 
     @NotNull private final FileDownloader downloader;
     @NotNull private final DistributedFilesManager manager;
     @NotNull private final ExecutorService downloadExecutor;
     @NotNull private final Seeder seeder;
+    @NotNull private final Updater updater;
 
     private final short port;
 
@@ -52,9 +45,14 @@ public class Client {
         for (File file : filesToUpload) {
             executeUpload(file.getName(), file.length());
         }
+        executeUpdate(new ArrayList<>(manager.getDistributedFilesIds()));
+
         this.port = port;
         seeder = new Seeder(port, manager);
         seeder.launch();
+
+        updater = new Updater(this, manager);
+        updater.launch();
     }
 
     @NotNull

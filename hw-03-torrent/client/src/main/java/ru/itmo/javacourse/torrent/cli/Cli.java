@@ -10,6 +10,9 @@ import ru.itmo.javacourse.torrent.command.tracker.UploadCommand;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +47,12 @@ public class Cli {
             if (nextPathAsString.isEmpty()) {
                 break;
             }
-            filesToUpload.add(new File(nextPathAsString));
+            Path pathToFile = Paths.get(nextPathAsString);
+            if (Files.notExists(pathToFile)) {
+                System.out.println(String.format("File %s not exists", nextPathAsString));
+            } else {
+                filesToUpload.add(new File(nextPathAsString));
+            }
         }
         return filesToUpload;
     }
@@ -88,7 +96,7 @@ public class Cli {
     }
 
     private void executeUpload(String[] commandAndArgs) throws IOException {
-        if (commandAndArgs.length != 3) {
+        if (commandAndArgs.length != 2) {
             throw new ClientCliException();
         }
         new UploadCommand(torrentClient).execute(Arrays.asList(commandAndArgs), System.out);

@@ -16,4 +16,6 @@ public class Configuration {
     public static final String TRACKER_FILES_META_PATH_NAME = ".jtorrent/tracker/";
     public static final String FRAGMENTS_PATH_NAME = ".jtorrent/client/fragments/";
 
+    public static final long CLIENT_UPDATE_INITIAL_DELAY_SECS = 300;
+    public static final long CLIENT_UPDATE_PERIOD_SECS = 300;
 }
