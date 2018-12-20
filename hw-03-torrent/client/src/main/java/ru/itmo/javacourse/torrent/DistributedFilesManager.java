@@ -7,6 +7,7 @@ import ru.itmo.javacourse.torrent.interaction.filesystem.client.FragmentedFile;
 import java.io.File;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DistributedFilesManager {
@@ -31,5 +32,14 @@ public class DistributedFilesManager {
     @NotNull
     public FragmentedFile getFile(int fileId) {
         return metadata.getFile(fileId);
+    }
+
+    public int getDistributedFilesCount() {
+        return metadata.getFilesAndFragments().size();
+    }
+
+    @NotNull
+    public Set<Integer> getDistributedFilesIds() {
+        return metadata.getFilesAndFragments().keySet();
     }
 }

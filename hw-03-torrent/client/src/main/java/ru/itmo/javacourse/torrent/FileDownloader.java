@@ -2,6 +2,7 @@ package ru.itmo.javacourse.torrent;
 
 import org.jetbrains.annotations.NotNull;
 import ru.itmo.javacourse.torrent.interaction.DistributorDescription;
+import ru.itmo.javacourse.torrent.interaction.Notifier;
 import ru.itmo.javacourse.torrent.interaction.filesystem.client.FragmentedFile;
 
 import java.io.IOException;
@@ -11,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 public class FileDownloader {
 
@@ -27,12 +27,11 @@ public class FileDownloader {
         this.downloadExecutor = downloadExecutor;
     }
 
-    @NotNull
-    public Future<?> downloadFile(int fileId, @NotNull String fileName, long fileSize) throws IOException {
+    public void downloadFile(int fileId, @NotNull String fileName, long fileSize) throws IOException {
         final FragmentedFile newFile = new FragmentedFile(fileId, fileName, fileSize);
         filesManager.addFile(fileId, newFile);
         downloadingFiles.put(newFile, new ArrayList<>(client.executeSources(fileId)));
-        return downloadExecutor.submit(new DownloadFileTask(newFile));
+        downloadExecutor.submit(new DownloadFileTask(newFile));
     }
 
     private class DownloadFileTask implements Runnable {
@@ -58,14 +57,17 @@ public class FileDownloader {
                     final DistributorDescription selectedDistributor = selectDistributor(fileDistributors);
                     final Collection<Integer> fragmentsIdsToDownload = client.executeStat(fileToDownload.getFileId(), selectedDistributor.getAddress().toString(), selectedDistributor.getPort());
                     for (int fragmentId : fragmentsIdsToDownload) {
+                        // TODO allow to download fragments in parallel?
                         if (!fileToDownload.hasFragment(fragmentId)) {
                             downloadFragment(selectedDistributor, fragmentId);
                         }
                     }
                 }
-                fileToDownload.unionAllFragmentsToNewFile();
+                final String pathToNewFile = fileToDownload.unionAllFragmentsToNewFile();
+
+                Notifier.createMessage(String.format("File %s downloaded and stored in %s", fileToDownload.getFileName(), pathToNewFile), System.out);
             } catch (IOException e) {
-                e.printStackTrace();
+                Notifier.createMessage(String.format("File %s has not downloaded dur to I/O error", fileToDownload.getFileName()), System.out);
             }
         }
 

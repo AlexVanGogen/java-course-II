@@ -2,10 +2,21 @@ package ru.itmo.javacourse.torrent;
 
 import org.jetbrains.annotations.NotNull;
 import ru.itmo.javacourse.torrent.interaction.filesystem.client.FragmentedFile;
+import ru.itmo.javacourse.torrent.interaction.message.client.ClientRequest;
 import ru.itmo.javacourse.torrent.interaction.message.client.get.GetRequest;
 import ru.itmo.javacourse.torrent.interaction.message.client.get.GetResponse;
 import ru.itmo.javacourse.torrent.interaction.message.client.stat.StatRequest;
 import ru.itmo.javacourse.torrent.interaction.message.client.stat.StatResponse;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.TrackerRequest;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.list.ListRequest;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.list.ListResponse;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.sources.SourcesRequest;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.sources.SourcesResponse;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateRequest;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.update.UpdateResponse;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadRequest;
+import ru.itmo.javacourse.torrent.interaction.message.tracker.upload.UploadResponse;
+import ru.itmo.javacourse.torrent.interaction.protocol.RequestManager;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -37,12 +48,13 @@ public class Seeder {
                         DataInputStream input = new DataInputStream(client.getInputStream());
                         DataOutputStream output = new DataOutputStream(client.getOutputStream())
                 ) {
-                    // TODO use RequestManager (like Tracker does)
-                    switch (input.readByte()) {
-                        case 1:
-                            executeStat(StatRequest.read(input)).write(output);
-                        case 2:
-                            executeGet(GetRequest.read(input)).write(output);
+                    ClientRequest request = RequestManager.readClientRequest(input);
+                    if (request instanceof StatRequest) {
+                        final StatResponse response = executeStat((StatRequest) request);
+                        response.write(output);
+                    } else {
+                        final GetResponse response = executeGet((GetRequest) request);
+                        response.write(output);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

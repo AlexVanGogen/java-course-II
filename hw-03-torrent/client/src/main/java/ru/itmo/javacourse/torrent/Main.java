@@ -11,10 +11,14 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws IOException {
+        if (args.length != 1) {
+            System.out.println("Specify port number");
+        }
+        final int port = Integer.valueOf(args[0]);
         Scanner scanner = new Scanner(System.in);
         Cli cli = new Cli();
         List<File> filesToUpload = cli.addFilesToUploadPrompt(scanner);
-        cli.attachClient(new Client(1237, filesToUpload));
+        cli.attachClient(new Client(port, filesToUpload));
 
         while (true) {
             System.out.print("> ");

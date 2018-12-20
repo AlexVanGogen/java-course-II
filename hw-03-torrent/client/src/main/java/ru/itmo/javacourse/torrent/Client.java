@@ -42,8 +42,6 @@ public class Client {
     @NotNull private final ExecutorService downloadExecutor;
     @NotNull private final Seeder seeder;
 
-    // TODO notifications when files are downloaded
-    @NotNull private final Collection<Future<?>> downloadTasksResults;
     private final int port;
 
     public Client(int port, @NotNull Collection<File> filesToUpload) throws IOException {
@@ -53,7 +51,6 @@ public class Client {
         for (File file : filesToUpload) {
             executeUpload(file.getName(), file.length());
         }
-        downloadTasksResults = new ArrayList<>();
         this.port = port;
         seeder = new Seeder(port, manager);
         seeder.launch();
@@ -125,7 +122,7 @@ public class Client {
         final Collection<DistributedFileDescription> distributedFilesDescriptions = executeList();
         for (DistributedFileDescription fileDescription : distributedFilesDescriptions) {
             if (fileDescription.getFileId() == fileIdToDownload) {
-                downloadTasksResults.add(downloader.downloadFile(fileDescription.getFileId(), fileDescription.getFileName(), fileDescription.getFileSize()));
+                downloader.downloadFile(fileDescription.getFileId(), fileDescription.getFileName(), fileDescription.getFileSize());
                 return;
             }
         }

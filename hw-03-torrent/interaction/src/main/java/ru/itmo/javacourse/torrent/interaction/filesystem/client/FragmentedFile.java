@@ -124,13 +124,15 @@ public class FragmentedFile {
         new FileFragment(fragmentId, data.length).savePart(data);
     }
 
-    public void unionAllFragmentsToNewFile() throws IOException {
+    @NotNull
+    public String unionAllFragmentsToNewFile() throws IOException {
         final Path newFilePath = Paths.get(makeNewFileName());
         Files.createFile(newFilePath);
         for (Map.Entry<Integer, FileFragment> fragmentInfo : availableFragments.entrySet()) {
             fragmentInfo.getValue().writeToFileAndDeleteFragment(newFilePath);
         }
         availableFragments.clear();
+        return newFilePath.toString();
     }
 
     @NotNull
