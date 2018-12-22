@@ -1,0 +1,5 @@
+rootProject.name = 'hw-03-torrent'
+include 'client'
+include 'tracker'
+include 'interaction'
+
