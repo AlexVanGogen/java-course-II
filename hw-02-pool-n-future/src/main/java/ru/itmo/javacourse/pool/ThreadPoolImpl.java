@@ -85,20 +85,26 @@ public class ThreadPoolImpl implements Pool {
          * We need synchronization here by both events (execution done / execution failed with an exception)
          * to have possibility to notify threads that wait the result with {@link LightFutureImpl#get()}
          */
-        private void executeTask(LightFutureImpl task) {
+        private <T> void executeTask(LightFutureImpl<T> task) {
             try {
                 synchronized (task) {
                     task.taskResult = task.taskSupplier.get();
-                    task.isDone = true;
+                    onTaskExecutionFinish(task);
                     task.notifyAll();
                 }
             } catch (Exception e) {
                 synchronized (task) {
-                    task.isDone = true;
                     task.taskExecutionException = e;
+                    onTaskExecutionFinish(task);
                     task.notifyAll();
                 }
             }
+        }
+
+        private <T> void onTaskExecutionFinish(LightFutureImpl<T> task) {
+            task.isDone = true;
+            task.directlyAppliedTasks.forEach(task::submit);
+            task.directlyAppliedTasks.clear();
         }
     }
 
@@ -113,11 +119,14 @@ public class ThreadPoolImpl implements Pool {
 
         @Nullable private Throwable taskExecutionException;
 
+        @NotNull private final List<LightFutureImpl<?>> directlyAppliedTasks;
+
         private boolean isDone;
 
         public LightFutureImpl(@NotNull Supplier<? extends T> supplier) {
             taskSupplier = supplier;
             isDone = false;
+            directlyAppliedTasks = new ArrayList<>();
         }
 
         /**
@@ -173,7 +182,11 @@ public class ThreadPoolImpl implements Pool {
 
             final LightFutureImpl<R> nextTask = new LightFutureImpl<>(nextTaskSupplier);
 
-            submit(nextTask);
+            if (isReady()) {
+                submit(nextTask);
+            } else {
+                directlyAppliedTasks.add(nextTask);
+            }
             return nextTask;
         }
 
